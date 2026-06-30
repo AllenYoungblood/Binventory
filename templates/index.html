@@ -1,0 +1,2104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>BINventory</title>
+<style>
+  :root {
+    --bg:       #0f1117;
+    --surface:  #1a1d27;
+    --card:     #22263a;
+    --border:   #2e3248;
+    --accent:   #7c6fff;
+    --accent2:  #a78bfa;
+    --text:     #e8eaf0;
+    --muted:    #7a7f99;
+    --success:  #34d399;
+    --danger:   #f87171;
+    --warn:     #fbbf24;
+    --radius:   12px;
+    --font:     'Inter', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    overscroll-behavior: none;
+  }
+
+  /* ── TYPOGRAPHY ── */
+  h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; }
+  h2 { font-size: 1.1rem; font-weight: 600; }
+  h3 { font-size: 0.95rem; font-weight: 600; }
+
+  /* ── LAYOUT ── */
+  #app { display: flex; flex-direction: column; height: 100dvh; }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 1.1rem; font-weight: 700; color: var(--accent2);
+    letter-spacing: -0.02em;
+  }
+  .logo svg { flex-shrink: 0; }
+
+  .clip-status {
+    margin-left: auto;
+    font-size: 0.72rem;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+  }
+  .clip-status.loading { background: #2d2a1a; color: var(--warn); }
+  .clip-status.ready   { background: #0d2d20; color: var(--success); }
+
+  /* ── NAV TABS ── */
+  nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-shrink: 0;
+  }
+  nav button {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 12px 4px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all .15s;
+    letter-spacing: 0.03em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+  nav button svg { opacity: .6; }
+  nav button.active {
+    color: var(--accent2);
+    border-bottom-color: var(--accent);
+  }
+  nav button.active svg { opacity: 1; }
+
+  /* ── MAIN CONTENT ── */
+  main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── VIEWS ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+
+  /* ── BIN LIST ── */
+  .bin-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  @media (min-width: 500px) {
+    .bin-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (min-width: 700px) {
+    .bin-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  .bin-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 12px;
+    cursor: pointer;
+    transition: transform .1s, box-shadow .1s;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bin-card:active { transform: scale(.97); }
+  .bin-card .bin-dot {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  .bin-card .bin-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1.2;
+    word-break: break-word;
+  }
+  .bin-card .bin-meta {
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .bin-card .bin-count {
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: var(--border);
+    padding: 2px 7px;
+    border-radius: 20px;
+    width: fit-content;
+    color: var(--text);
+  }
+
+  /* Add bin card */
+  .bin-add {
+    border: 2px dashed var(--border);
+    background: transparent;
+    justify-content: center;
+    align-items: center;
+    min-height: 90px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    gap: 6px;
+  }
+  .bin-add:hover { border-color: var(--accent); color: var(--accent2); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .1s, transform .1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active { opacity: .8; transform: scale(.97); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-secondary { background: var(--border); color: var(--text); }
+  .btn-danger { background: #2d1515; color: var(--danger); border: 1px solid #4a1f1f; }
+  .btn-sm { padding: 6px 12px; font-size: 0.78rem; }
+  .btn-full { width: 100%; }
+  .btn-icon {
+    background: var(--border);
+    color: var(--muted);
+    padding: 8px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-icon:active { opacity: .7; }
+
+  /* ── FORMS ── */
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  input[type="text"], input[type="color"], textarea, select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 0.9rem;
+    font-family: var(--font);
+    outline: none;
+    transition: border-color .15s;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+  }
+  input[type="color"] {
+    padding: 4px;
+    height: 42px;
+    cursor: pointer;
+  }
+  textarea { resize: vertical; min-height: 70px; }
+
+  /* ── MODAL / SHEET ── */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.65);
+    z-index: 200;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .overlay.active { display: flex; }
+  .sheet {
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    border-top: 1px solid var(--border);
+    padding: 20px 16px 32px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 92dvh;
+    overflow-y: auto;
+    animation: slideUp .2s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  .sheet-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+  .sheet-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* ── CAMERA / PHOTO ── */
+  #camera-container {
+    position: relative;
+    background: #000;
+    border-radius: var(--radius);
+    overflow: hidden;
+    aspect-ratio: 4/3;
+    max-height: 60dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+  #camera-video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: none;
+  }
+  #camera-canvas { display: none; }
+  #photo-preview {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    display: none;
+  }
+  .camera-placeholder {
+    color: var(--muted);
+    text-align: center;
+    font-size: 0.85rem;
+  }
+  .camera-controls {
+    display: flex; gap: 10px; margin-bottom: 12px;
+  }
+
+  /* ── ITEM GRID ── */
+  .item-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  @media (min-width: 500px) {
+    .item-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (min-width: 700px) {
+    .item-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  .item-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform .1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .item-card:active { transform: scale(.97); }
+  .item-card img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    display: block;
+    background: #000;
+  }
+  .item-card-body { padding: 8px; }
+  .item-card-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 3px;
+  }
+  .item-card-bin {
+    font-size: 0.72rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .bin-pip {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+  }
+
+  /* Tags */
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 6px;
+  }
+  .tag {
+    font-size: 0.7rem;
+    background: var(--border);
+    color: var(--muted);
+    border-radius: 5px;
+    padding: 2px 7px;
+    font-weight: 500;
+  }
+
+  /* ── SEARCH ── */
+  .search-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .search-input-wrap {
+    flex: 1;
+    position: relative;
+  }
+  .search-input-wrap svg {
+    position: absolute;
+    left: 10px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .search-input-wrap input {
+    padding-left: 36px;
+  }
+
+  /* ── BIN DETAIL HEADER ── */
+  .bin-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .bin-detail-dot {
+    width: 20px; height: 20px;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+
+  /* ── ITEM DETAIL ── */
+  .item-detail-photo {
+    width: 100%;
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    object-fit: contain;
+    max-height: 300px;
+    background: #000;
+    display: block;
+  }
+
+  /* ── SEARCH SCORE BAR ── */
+  .score-bar {
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+  .score-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  /* ── EMPTY STATES ── */
+  .empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 48px 16px;
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #fff;
+    color: #111;
+    padding: 10px 18px;
+    border-radius: 30px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    z-index: 999;
+    transition: transform .25s;
+    white-space: nowrap;
+    box-shadow: 0 4px 20px rgba(0,0,0,.4);
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── UTILS ── */
+  .flex { display: flex; }
+  .flex-center { display: flex; align-items: center; }
+  .gap-8 { gap: 8px; }
+  .gap-10 { gap: 10px; }
+  .mt-8 { margin-top: 8px; }
+  .mt-12 { margin-top: 12px; }
+  .mb-12 { margin-bottom: 12px; }
+  .muted { color: var(--muted); }
+  .text-sm { font-size: 0.82rem; }
+  .text-danger { color: var(--danger); }
+  .text-success { color: var(--success); }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+  /* ── SCHEDULE PANEL ── */
+  .schedule-panel {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 12px;
+  }
+  .schedule-panel label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .time-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .time-row input[type="number"] {
+    width: 64px;
+    text-align: center;
+    padding: 8px 6px;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .time-sep {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--muted);
+  }
+  .next-run-label {
+    font-size: 0.75rem;
+    color: var(--success);
+    margin-top: 6px;
+  }
+
+  /* ── WLED ── */
+  .wled-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: #1a1530;
+    color: #a78bfa;
+    border: 1px solid #3d2f7a;
+    letter-spacing: 0.03em;
+  }
+  .wled-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #a78bfa;
+    animation: pulse-dot 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.4; transform: scale(0.7); }
+  }
+  .find-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    border-radius: 8px;
+    border: 1px solid #3d2f7a;
+    background: #1a1530;
+    color: #a78bfa;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .find-btn:active { background: #2d1f5e; }
+  .find-btn.firing {
+    background: #2d1f5e;
+    animation: find-pulse .6s ease-in-out infinite alternate;
+  }
+  @keyframes find-pulse {
+    from { box-shadow: 0 0 0 0 rgba(167,139,250,.4); }
+    to   { box-shadow: 0 0 0 8px rgba(167,139,250,0); }
+  }
+  .led-strip {
+    display: flex;
+    gap: 3px;
+    flex-wrap: wrap;
+    padding: 10px;
+    background: #0a0a0f;
+    border-radius: 8px;
+    margin: 8px 0;
+    min-height: 36px;
+    align-items: center;
+  }
+  .led-pip {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #222;
+    border: 1px solid #333;
+    flex-shrink: 0;
+    transition: background .2s, box-shadow .2s;
+  }
+  .led-pip.active {
+    border-color: transparent;
+  }
+  .jog-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 6px 0;
+  }
+  .jog-btn {
+    background: var(--border);
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: var(--text);
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .jog-btn:active { opacity: .7; }
+  .jog-label {
+    font-size: 0.78rem;
+    color: var(--muted);
+    min-width: 80px;
+  }
+  .wled-section {
+    margin-bottom: 14px;
+  }
+  .wled-section-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+  .effect-row {
+    display: flex;
+    gap: 8px;
+  }
+  .effect-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all .15s;
+  }
+  .effect-btn.active {
+    border-color: var(--accent);
+    background: #1a1530;
+    color: var(--accent2);
+  }
+  .brightness-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brightness-row input[type=range] {
+    flex: 1;
+    accent-color: var(--accent);
+  }
+
+  /* ── LOADING SPINNER ── */
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .processing-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px;
+    background: var(--bg);
+    border-radius: 8px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  /* ── BIN FILTER CHIPS ── */
+  .chip-row {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    margin-bottom: 12px;
+    scrollbar-width: none;
+  }
+  .chip-row::-webkit-scrollbar { display: none; }
+  .chip {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .chip.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div class="logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+        <line x1="12" y1="22.08" x2="12" y2="12"/>
+      </svg>
+      BINventory
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0;">
+      <span id="clip-badge" class="clip-status loading">⏳ Loading ML…</span>
+      <div id="queue-controls" style="display:none;align-items:center;gap:6px;">
+        <span id="queue-badge" style="display:none;font-size:0.72rem;font-weight:700;background:#2d1f5e;color:#a78bfa;padding:3px 8px;border-radius:20px;white-space:nowrap;"></span>
+        <button id="autotag-btn" onclick="toggleAutoTag()" title="Toggle auto-tagging" style="font-size:0.72rem;font-weight:700;padding:3px 8px;border-radius:20px;border:none;cursor:pointer;white-space:nowrap;"></button>
+        <button id="runtags-btn" onclick="runAllTags()" title="Tag all untagged items now" style="display:none;font-size:0.72rem;font-weight:700;padding:3px 8px;border-radius:20px;border:none;cursor:pointer;background:#0d2d20;color:#34d399;white-space:nowrap;">▶ Tag All</button>
+        <button onclick="openSheet('overlay-ml-settings')" title="ML Settings" style="background:var(--border);border:none;border-radius:20px;padding:3px 8px;cursor:pointer;color:var(--muted);font-size:0.78rem;">⚙</button>
+      </div>
+    </div>
+  </header>
+
+  <nav>
+    <button class="active" onclick="showView('bins')" id="tab-bins">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      Bins
+    </button>
+    <button onclick="showView('inventory')" id="tab-inventory">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Inventory
+    </button>
+    <button onclick="showView('search')" id="tab-search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Search
+    </button>
+  </nav>
+
+  <main>
+    <!-- ═══════════════ BINS VIEW ═══════════════ -->
+    <div id="view-bins" class="view active">
+      <div id="bins-grid" class="bin-grid"></div>
+    </div>
+
+    <!-- ═══════════════ BIN DETAIL VIEW ═══════════════ -->
+    <div id="view-bin-detail" class="view">
+      <div class="bin-detail-header">
+        <button class="btn-icon" onclick="showView('bins')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div id="bin-detail-dot" class="bin-detail-dot"></div>
+        <div>
+          <div id="bin-detail-name" style="font-weight:700;font-size:1.05rem;"></div>
+          <div id="bin-detail-location" class="text-sm muted"></div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <button class="btn-icon" onclick="openEditBinSheet()" title="Edit bin">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button id="bin-find-btn" class="find-btn" style="display:none" onclick="findBin(currentBinId)">
+            💡 Find
+          </button>
+          <button class="btn-icon" id="bin-wled-btn" onclick="openWledSheet(currentBinId)" style="display:none" title="WLED Setup">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="openAddItemSheet()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Item
+          </button>
+        </div>
+      </div>
+      <div id="bin-items-grid" class="item-grid"></div>
+    </div>
+
+    <!-- ═══════════════ INVENTORY VIEW ═══════════════ -->
+    <div id="view-inventory" class="view">
+      <div id="inv-bin-chips" class="chip-row"></div>
+      <div id="inventory-grid" class="item-grid"></div>
+    </div>
+
+    <!-- ═══════════════ SEARCH VIEW ═══════════════ -->
+    <div id="view-search" class="view">
+      <div class="search-bar">
+        <div class="search-input-wrap" style="flex:1">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="search-input" placeholder="screwdriver, red cable, hammer…" oninput="scheduleSearch()" autocomplete="off">
+        </div>
+      </div>
+      <div id="search-status" class="muted text-sm mb-12"></div>
+      <div id="search-results" class="item-grid"></div>
+    </div>
+  </main>
+</div>
+
+<!-- ═══════════════ SHEETS / MODALS ═══════════════ -->
+
+<!-- Create Bin -->
+<div id="overlay-new-bin" class="overlay" onclick="closeAllSheets(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      New Bin
+      <button class="btn-icon" onclick="closeSheet('overlay-new-bin')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="field"><label>Bin Label *</label><input id="new-bin-name" type="text" placeholder="A1, Top Shelf, Red Box…"></div>
+    <div class="field"><label>Location (optional)</label><input id="new-bin-location" type="text" placeholder="Garage, Attic, Office…"></div>
+    <div class="field"><label>Color</label><input id="new-bin-color" type="color" value="#7c6fff"></div>
+    <button class="btn btn-primary btn-full" onclick="createBin()">Create Bin</button>
+  </div>
+</div>
+
+<!-- Edit Bin -->
+<div id="overlay-edit-bin" class="overlay" onclick="closeAllSheets(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      Edit Bin
+      <button class="btn-icon" onclick="closeSheet('overlay-edit-bin')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="field"><label>Bin Label</label><input id="edit-bin-name" type="text"></div>
+    <div class="field"><label>Location</label><input id="edit-bin-location" type="text"></div>
+    <div class="field"><label>Color</label><input id="edit-bin-color" type="color"></div>
+    <button class="btn btn-primary btn-full mb-12" onclick="saveBinEdit()">Save Changes</button>
+    <hr class="divider">
+    <button class="btn btn-danger btn-full" onclick="confirmDeleteBin()">Delete This Bin & All Items</button>
+  </div>
+</div>
+
+<!-- Add Item / Camera -->
+<div id="overlay-add-item" class="overlay" onclick="closeAllSheets(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      Add Item to <span id="add-item-bin-name" style="color:var(--accent2)"></span>
+      <button class="btn-icon" onclick="closeSheet('overlay-add-item');stopCamera()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div id="camera-container">
+      <video id="camera-video" autoplay playsinline muted></video>
+      <canvas id="camera-canvas"></canvas>
+      <img id="photo-preview" alt="Preview">
+      <div class="camera-placeholder" id="camera-placeholder">
+        <div style="font-size:2rem;margin-bottom:8px;">📷</div>
+        <div>Tap to start camera or<br>upload a photo</div>
+      </div>
+    </div>
+
+    <div class="camera-controls">
+      <button class="btn btn-secondary" style="flex:1" onclick="startCamera()" id="btn-start-cam">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        Camera
+      </button>
+      <button class="btn btn-primary" style="flex:1" onclick="capturePhoto()" id="btn-capture" disabled>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+        Capture
+      </button>
+      <label class="btn btn-secondary" style="flex:1;cursor:pointer;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload
+        <input type="file" accept="image/*" capture="environment" style="display:none" onchange="handleFileUpload(event)">
+      </label>
+    </div>
+
+    <div class="field"><label>Label (auto-filled from ML)</label><input id="item-label" type="text" placeholder="e.g. Phillips screwdriver"></div>
+    <div class="field"><label>Notes (optional)</label><textarea id="item-notes" placeholder="Details, size, brand…"></textarea></div>
+
+    <button class="btn btn-primary btn-full" id="btn-save-item" onclick="saveItem()" disabled>Save Item</button>
+  </div>
+</div>
+
+<!-- Item Detail -->
+<div id="overlay-item-detail" class="overlay" onclick="closeAllSheets(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      Item Detail
+      <button class="btn-icon" onclick="closeSheet('overlay-item-detail')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <img id="detail-photo" class="item-detail-photo">
+    <div class="field"><label>Label</label><input id="detail-label" type="text"></div>
+    <div class="field"><label>Notes</label><textarea id="detail-notes"></textarea></div>
+    <div class="field">
+      <label>Move to Bin</label>
+      <select id="detail-bin-select"></select>
+    </div>
+    <div id="detail-tags" class="tag-list mb-12"></div>
+    <div id="detail-retag-row" style="display:none" class="mb-12">
+      <button class="btn btn-secondary btn-sm" onclick="retagItem()">🔄 Re-run ML tagging</button>
+    </div>
+    <div id="item-find-row" style="display:none;margin-bottom:10px;">
+      <button class="find-btn btn-full" style="width:100%;justify-content:center;" onclick="findBinFromItem()">
+        💡 Find This Item's Bin
+      </button>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-primary" style="flex:1" onclick="saveItemDetail()">Save</button>
+      <button class="btn btn-danger" onclick="deleteItem()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ML Settings Sheet -->
+<div id="overlay-ml-settings" class="overlay" onclick="closeAllSheets(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      ML / Tagging Settings
+      <button class="btn-icon" onclick="closeSheet('overlay-ml-settings')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Auto-tag toggle -->
+    <div class="schedule-panel">
+      <label>Auto-tag Mode</label>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div style="font-size:0.85rem;color:var(--muted);line-height:1.4;">
+          When ON, each photo is queued for tagging immediately after upload.<br>
+          When OFF, photos save without tagging until you run manually or on schedule.
+        </div>
+        <button id="settings-autotag-btn" onclick="toggleAutoTag()" style="flex-shrink:0;font-size:0.8rem;font-weight:700;padding:6px 12px;border-radius:20px;border:none;cursor:pointer;white-space:nowrap;"></button>
+      </div>
+    </div>
+
+    <!-- Manual run -->
+    <div class="schedule-panel mt-8">
+      <label>Run Now</label>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div id="settings-queue-status" style="font-size:0.85rem;color:var(--muted);flex:1;"></div>
+        <button class="btn btn-secondary btn-sm" onclick="runAllTags()">▶ Tag All Untagged</button>
+      </div>
+    </div>
+
+    <!-- Schedule -->
+    <div class="schedule-panel mt-8">
+      <label>Scheduled Run — Daily at</label>
+      <div class="time-row">
+        <input type="number" id="sched-hour" min="0" max="23" value="2" style="width:64px;">
+        <span class="time-sep">:</span>
+        <input type="number" id="sched-min"  min="0" max="59" value="0"  style="width:64px;">
+        <span style="font-size:0.8rem;color:var(--muted);">(24h, local server time)</span>
+      </div>
+      <div id="next-run-label" class="next-run-label" style="display:none;"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="btn btn-primary btn-sm" onclick="saveSchedule()">Set Schedule</button>
+        <button class="btn btn-secondary btn-sm" id="clear-sched-btn" style="display:none" onclick="clearSchedule()">Clear Schedule</button>
+      </div>
+    </div>
+
+    <!-- WLED Link -->
+    <div class="schedule-panel mt-8" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div style="font-size:0.85rem;">💡 WLED LED Integration</div>
+      <button class="btn btn-secondary btn-sm" onclick="closeSheet('overlay-ml-settings');openSheet('overlay-wled-global')">Configure</button>
+    </div>
+
+    <!-- Memory info -->
+    <div class="schedule-panel mt-8" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div>
+        <div style="font-size:0.82rem;font-weight:600;">CLIP Model Memory</div>
+        <div id="clip-mem-status" style="font-size:0.78rem;color:var(--muted);margin-top:2px;"></div>
+      </div>
+      <button id="unload-clip-btn" class="btn btn-secondary btn-sm" onclick="unloadClip()" style="display:none;">Unload Now</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- WLED Global Settings Sheet -->
+<div id="overlay-wled-global" class="overlay" onclick="closeAllSheets(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      WLED Integration
+      <button class="btn-icon" onclick="closeSheet('overlay-wled-global')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="schedule-panel">
+      <label>Enable WLED</label>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div style="font-size:0.85rem;color:var(--muted);line-height:1.4;">
+          Enables LED illumination of bin locations via WLED-compatible devices.
+        </div>
+        <button id="wled-global-toggle" onclick="toggleWledGlobal()" style="flex-shrink:0;font-size:0.8rem;font-weight:700;padding:6px 14px;border-radius:20px;border:none;cursor:pointer;"></button>
+      </div>
+    </div>
+    <div class="schedule-panel mt-8">
+      <label>Default WLED IP Address</label>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="wled-global-ip" placeholder="192.168.1.100" style="flex:1;">
+        <button class="btn btn-secondary btn-sm" onclick="pingWled(document.getElementById('wled-global-ip').value, 'wled-ping-result')">Ping</button>
+      </div>
+      <div id="wled-ping-result" style="font-size:0.78rem;margin-top:6px;"></div>
+    </div>
+    <div style="margin-top:14px;">
+      <button class="btn btn-primary btn-full" onclick="saveWledGlobal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- WLED Bin Setup Sheet -->
+<div id="overlay-wled-bin" class="overlay" onclick="closeAllSheets(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      <span>💡 WLED — <span id="wled-bin-name"></span></span>
+      <button class="btn-icon" onclick="closeSheet('overlay-wled-bin');wledPreviewOff()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Connection -->
+    <div class="wled-section">
+      <div class="wled-section-title">WLED Device</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="text" id="wled-bin-ip" placeholder="192.168.1.100" style="flex:1;">
+        <button class="btn btn-secondary btn-sm" onclick="pingWledBin()">Ping</button>
+      </div>
+      <div id="wled-bin-ping-result" style="font-size:0.78rem;margin-top:5px;"></div>
+    </div>
+
+    <!-- LED strip visualizer -->
+    <div class="wled-section">
+      <div class="wled-section-title">LED Zone — <span id="wled-strip-label">LEDs 0–4 (5 LEDs)</span></div>
+      <div id="wled-led-strip" class="led-strip"></div>
+
+      <!-- Jog controls -->
+      <div class="jog-row">
+        <span class="jog-label">Position</span>
+        <button class="jog-btn" onclick="jogStrip(-10)">◀◀</button>
+        <button class="jog-btn" onclick="jogStrip(-1)">◀</button>
+        <button class="jog-btn" onclick="jogStrip(1)">▶</button>
+        <button class="jog-btn" onclick="jogStrip(10)">▶▶</button>
+      </div>
+      <div class="jog-row">
+        <span class="jog-label">Zone Size</span>
+        <button class="jog-btn" onclick="resizeStrip(-5)">−−</button>
+        <button class="jog-btn" onclick="resizeStrip(-1)">−</button>
+        <button class="jog-btn" onclick="resizeStrip(1)">+</button>
+        <button class="jog-btn" onclick="resizeStrip(5)">++</button>
+      </div>
+    </div>
+
+    <!-- Color & Brightness -->
+    <div class="wled-section">
+      <div class="wled-section-title">Color & Brightness</div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
+        <input type="color" id="wled-bin-color" value="#ffffff" style="width:52px;height:42px;padding:2px;border-radius:6px;cursor:pointer;" onchange="sendPreview()">
+        <div style="flex:1;">
+          <div class="brightness-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <input type="range" id="wled-bin-brightness" min="10" max="255" value="128" oninput="updateBrightnessLabel();sendPreview()">
+            <span id="wled-brightness-label" style="font-size:0.78rem;color:var(--muted);min-width:28px;text-align:right;">128</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Effect -->
+    <div class="wled-section">
+      <div class="wled-section-title">Effect</div>
+      <div class="effect-row">
+        <button class="effect-btn active" id="effect-solid" onclick="setEffect('solid')">
+          ▬ Solid
+        </button>
+        <button class="effect-btn" id="effect-pulse" onclick="setEffect('pulse')">
+          ◉ Pulse / Breathe
+        </button>
+      </div>
+    </div>
+
+    <!-- Duration -->
+    <div class="wled-section">
+      <div class="wled-section-title">Find Duration (seconds) — 0 = stay on</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="number" id="wled-bin-duration" min="0" max="3600" value="10" style="width:90px;">
+        <span style="font-size:0.8rem;color:var(--muted);">seconds (0 = stays on until manually off)</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="btn btn-secondary" onclick="wledPreviewOff()" style="flex:1">Turn Off</button>
+      <button class="btn btn-primary" onclick="saveWledBin()" style="flex:1">Save Config</button>
+    </div>
+    <div style="margin-top:8px;">
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer;">
+        <input type="checkbox" id="wled-bin-enabled" style="width:18px;height:18px;accent-color:var(--accent);">
+        Enable WLED for this bin
+      </label>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let bins = [];
+let currentBinId = null;
+let currentItemId = null;
+let capturedBlob = null;
+let cameraStream = null;
+let searchTimer = null;
+let invBinFilter = null;   // null = all
+
+// ── BOOT ──────────────────────────────────────────────────────────────────────
+(async () => {
+  await loadBins();
+  await loadWledGlobal();
+  renderBinsView();
+  fetch('/api/warmup', {method:'POST'});
+  pollClipStatus();
+})();
+
+let _autoTag      = true;
+let _scheduleHour = null;
+let _scheduleMins = 0;
+
+function pollClipStatus() {
+  fetch('/api/status').then(r=>r.json()).then(d => {
+    const badge   = document.getElementById('clip-badge');
+    const qctrls  = document.getElementById('queue-controls');
+    const qbadge  = document.getElementById('queue-badge');
+    const runBtn  = document.getElementById('runtags-btn');
+    const autoBtn = document.getElementById('autotag-btn');
+
+    _autoTag      = d.auto_tag;
+    _scheduleHour = d.schedule_hour;
+    _scheduleMins = d.schedule_min;
+
+    const busy = d.worker_running || d.queue_size > 0 || d.tagging_now;
+
+    if (busy || d.clip_ready) {
+      qctrls.style.display = 'flex';
+    }
+
+    if (busy) {
+      // model is loaded and working
+      badge.textContent = `⚙ Tagging… (${d.queue_size} left)`;
+      badge.className   = 'clip-status ready';
+      qbadge.textContent  = `${d.queue_size} left`;
+      qbadge.style.display = 'inline-block';
+      runBtn.style.display = 'none';
+      autoBtn.textContent  = '⚙ Running…';
+      autoBtn.style.background = '#1a2d1a';
+      autoBtn.style.color = '#34d399';
+    } else if (d.clip_ready) {
+      // loaded but idle
+      badge.textContent = '✓ ML Ready (idle)';
+      badge.className   = 'clip-status ready';
+      qbadge.style.display = 'none';
+      updateAutoTagBtn();
+    } else if (d.clip_loading) {
+      badge.textContent = '⏳ Loading ML…';
+      badge.className   = 'clip-status loading';
+      qbadge.style.display = 'none';
+    } else {
+      // unloaded / not running
+      badge.textContent = '💤 ML Unloaded';
+      badge.className   = 'clip-status loading';
+      qbadge.style.display = 'none';
+      qctrls.style.display = 'flex';
+      updateAutoTagBtn();
+    }
+
+    // update settings sheet if open
+    updateSettingsSheet(d);
+
+    const interval = busy ? 2000 : (d.clip_ready ? 10000 : 15000);
+    setTimeout(pollClipStatus, interval);
+  }).catch(() => setTimeout(pollClipStatus, 4000));
+}
+
+function updateAutoTagBtn() {
+  const btn    = document.getElementById('autotag-btn');
+  const runBtn = document.getElementById('runtags-btn');
+  const sbtn   = document.getElementById('settings-autotag-btn');
+  if (_autoTag) {
+    if (btn) { btn.textContent = '🟢 Auto-tag ON'; btn.style.background='#0d2d20'; btn.style.color='#34d399'; }
+    if (sbtn){ sbtn.textContent= '🟢 Auto-tag ON'; sbtn.style.background='#0d2d20'; sbtn.style.color='#34d399'; }
+    if (runBtn) runBtn.style.display = 'none';
+  } else {
+    if (btn) { btn.textContent = '⏸ Auto-tag OFF'; btn.style.background='#2d1a0a'; btn.style.color='#fbbf24'; }
+    if (sbtn){ sbtn.textContent= '⏸ Auto-tag OFF'; sbtn.style.background='#2d1a0a'; sbtn.style.color='#fbbf24'; }
+    if (runBtn) runBtn.style.display = 'inline-block';
+  }
+}
+
+function updateSettingsSheet(d) {
+  // queue status line
+  const qs = document.getElementById('settings-queue-status');
+  if (qs) {
+    if (d.worker_running || d.tagging_now) {
+      qs.textContent = `⚙ Tagging in progress — ${d.queue_size} item${d.queue_size!==1?'s':''} remaining`;
+      qs.style.color = 'var(--success)';
+    } else if (d.queue_size > 0) {
+      qs.textContent = `${d.queue_size} item${d.queue_size!==1?'s':''} queued, worker starting…`;
+      qs.style.color = 'var(--warn)';
+    } else {
+      qs.textContent = 'No items pending.';
+      qs.style.color = 'var(--muted)';
+    }
+  }
+  // schedule next-run
+  const nrl = document.getElementById('next-run-label');
+  const clb = document.getElementById('clear-sched-btn');
+  if (nrl) {
+    if (d.next_run) {
+      const t = new Date(d.next_run);
+      nrl.textContent = `Next run: ${t.toLocaleString()}`;
+      nrl.style.display = 'block';
+      if (clb) clb.style.display = 'inline-block';
+    } else {
+      nrl.style.display = 'none';
+      if (clb) clb.style.display = 'none';
+    }
+  }
+  // fill schedule inputs from server state
+  if (d.schedule_hour !== null && d.schedule_hour !== undefined) {
+    const hi = document.getElementById('sched-hour');
+    const mi = document.getElementById('sched-min');
+    if (hi) hi.value = d.schedule_hour;
+    if (mi) mi.value = d.schedule_min;
+  }
+  // clip memory status
+  const cms  = document.getElementById('clip-mem-status');
+  const ulb  = document.getElementById('unload-clip-btn');
+  if (cms) {
+    if (d.worker_running || d.tagging_now) {
+      cms.textContent = '🟢 Loaded — actively tagging';
+      if (ulb) ulb.style.display = 'none';
+    } else if (d.clip_ready) {
+      cms.textContent = '🟡 Loaded and idle — using RAM';
+      if (ulb) ulb.style.display = 'inline-block';
+    } else {
+      cms.textContent = '⚫ Not loaded — no RAM used';
+      if (ulb) ulb.style.display = 'none';
+    }
+  }
+}
+
+async function toggleAutoTag() {
+  _autoTag = !_autoTag;
+  updateAutoTagBtn();
+  await fetch('/api/settings/autotag', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({enabled: _autoTag})
+  });
+  pollClipStatus();
+}
+
+async function runAllTags() {
+  try {
+    const r = await api('/api/settings/runtags', {method:'POST', body:'{}'});
+    toast(r.queued > 0
+      ? `${r.queued} item${r.queued!==1?'s':''} queued — tagging starting…`
+      : 'All items already tagged');
+    pollClipStatus();
+  } catch(e) { toast('Error: ' + e.message, true); }
+}
+
+async function saveSchedule() {
+  const hour = parseInt(document.getElementById('sched-hour').value);
+  const min  = parseInt(document.getElementById('sched-min').value);
+  if (isNaN(hour) || hour < 0 || hour > 23) { toast('Hour must be 0–23', true); return; }
+  if (isNaN(min)  || min  < 0 || min  > 59) { toast('Minute must be 0–59', true); return; }
+  try {
+    await api('/api/settings/schedule', {method:'POST', body: JSON.stringify({hour, minute: min})});
+    toast(`Schedule set — runs daily at ${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`);
+    pollClipStatus();
+  } catch(e) { toast('Error: ' + e.message, true); }
+}
+
+async function clearSchedule() {
+  try {
+    await api('/api/settings/schedule', {method:'POST', body: JSON.stringify({hour: null})});
+    toast('Schedule cleared');
+    pollClipStatus();
+  } catch(e) { toast('Error: ' + e.message, true); }
+}
+
+async function unloadClip() {
+  try {
+    await api('/api/settings/unloadclip', {method:'POST', body:'{}'});
+    toast('CLIP unloaded — RAM freed');
+    pollClipStatus();
+  } catch(e) { toast('Error: ' + e.message, true); }
+}
+
+// ── VIEWS ─────────────────────────────────────────────────────────────────────
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+
+  if (name === 'bins') {
+    document.getElementById('view-bins').classList.add('active');
+    document.getElementById('tab-bins').classList.add('active');
+  } else if (name === 'bin-detail') {
+    document.getElementById('view-bin-detail').classList.add('active');
+    document.getElementById('tab-bins').classList.add('active');
+  } else if (name === 'inventory') {
+    document.getElementById('view-inventory').classList.add('active');
+    document.getElementById('tab-inventory').classList.add('active');
+    loadInventoryView();
+  } else if (name === 'search') {
+    document.getElementById('view-search').classList.add('active');
+    document.getElementById('tab-search').classList.add('active');
+    setTimeout(() => document.getElementById('search-input').focus(), 200);
+  }
+}
+
+// ── API HELPERS ───────────────────────────────────────────────────────────────
+async function api(path, opts={}) {
+  const r = await fetch(path, {
+    headers: {'Content-Type':'application/json'},
+    ...opts
+  });
+  if (!r.ok) {
+    const e = await r.json().catch(()=>({error:r.statusText}));
+    throw new Error(e.error || r.statusText);
+  }
+  return r.json();
+}
+
+// ── BINS ──────────────────────────────────────────────────────────────────────
+async function loadBins() {
+  bins = await api('/api/bins');
+}
+
+function renderBinsView() {
+  const grid = document.getElementById('bins-grid');
+  grid.innerHTML = '';
+
+  bins.forEach(b => {
+    const card = document.createElement('div');
+    card.className = 'bin-card';
+    card.onclick = () => openBin(b.id);
+    card.innerHTML = `
+      <div class="bin-dot" style="background:${b.color}"></div>
+      <div class="bin-name">${esc(b.name)}</div>
+      ${b.location ? `<div class="bin-meta">${esc(b.location)}</div>` : ''}
+      <div class="bin-count">${b.item_count} item${b.item_count!==1?'s':''}</div>
+    `;
+    grid.appendChild(card);
+  });
+
+  // Add new bin card
+  const add = document.createElement('div');
+  add.className = 'bin-card bin-add';
+  add.onclick = () => openSheet('overlay-new-bin');
+  add.innerHTML = `
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    New Bin
+  `;
+  grid.appendChild(add);
+}
+
+async function createBin() {
+  const name  = document.getElementById('new-bin-name').value.trim();
+  const loc   = document.getElementById('new-bin-location').value.trim();
+  const color = document.getElementById('new-bin-color').value;
+  if (!name) { toast('Enter a bin name'); return; }
+  try {
+    await api('/api/bins', {method:'POST', body: JSON.stringify({name,location:loc,color})});
+    closeSheet('overlay-new-bin');
+    document.getElementById('new-bin-name').value = '';
+    document.getElementById('new-bin-location').value = '';
+    await loadBins();
+    renderBinsView();
+    toast(`Bin "${name}" created`);
+  } catch(e) { toast(e.message, true); }
+}
+
+function openBin(binId) {
+  currentBinId = binId;
+  const bin = bins.find(b => b.id === binId);
+  if (!bin) return;
+  document.getElementById('bin-detail-name').textContent     = bin.name;
+  document.getElementById('bin-detail-location').textContent = bin.location || '';
+  document.getElementById('bin-detail-dot').style.background = bin.color;
+
+  // WLED buttons — show if global WLED is enabled
+  const findBtn = document.getElementById('bin-find-btn');
+  const wledBtn = document.getElementById('bin-wled-btn');
+  if (_wledGlobalEnabled) {
+    if (wledBtn) wledBtn.style.display = 'inline-flex';
+    if (findBtn) {
+      findBtn.style.display = bin.wled_enabled ? 'inline-flex' : 'none';
+      findBtn.textContent   = '💡 Find';
+      findBtn.classList.remove('firing');
+    }
+  } else {
+    if (wledBtn) wledBtn.style.display = 'none';
+    if (findBtn) findBtn.style.display = 'none';
+  }
+
+  showView('bin-detail');
+  loadBinItems();
+}
+
+async function loadBinItems() {
+  const grid = document.getElementById('bin-items-grid');
+  grid.innerHTML = '<div class="muted text-sm">Loading…</div>';
+  const items = await api(`/api/items?bin_id=${currentBinId}`);
+  renderItemGrid(grid, items);
+}
+
+// ── EDIT BIN ──────────────────────────────────────────────────────────────────
+function openEditBinSheet() {
+  const bin = bins.find(b => b.id === currentBinId);
+  if (!bin) return;
+  document.getElementById('edit-bin-name').value    = bin.name;
+  document.getElementById('edit-bin-location').value = bin.location;
+  document.getElementById('edit-bin-color').value   = bin.color;
+  openSheet('overlay-edit-bin');
+}
+
+async function saveBinEdit() {
+  const name  = document.getElementById('edit-bin-name').value.trim();
+  const loc   = document.getElementById('edit-bin-location').value.trim();
+  const color = document.getElementById('edit-bin-color').value;
+  if (!name) { toast('Name required'); return; }
+  try {
+    await api(`/api/bins/${currentBinId}`, {method:'PUT', body: JSON.stringify({name,location:loc,color})});
+    closeSheet('overlay-edit-bin');
+    await loadBins();
+    openBin(currentBinId);  // refresh header
+    toast('Bin updated');
+  } catch(e) { toast(e.message, true); }
+}
+
+async function confirmDeleteBin() {
+  const bin = bins.find(b => b.id === currentBinId);
+  if (!confirm(`Delete bin "${bin?.name}" and ALL its items? This cannot be undone.`)) return;
+  try {
+    await api(`/api/bins/${currentBinId}`, {method:'DELETE'});
+    closeSheet('overlay-edit-bin');
+    await loadBins();
+    showView('bins');
+    renderBinsView();
+    toast('Bin deleted');
+  } catch(e) { toast(e.message, true); }
+}
+
+// ── ADD ITEM ──────────────────────────────────────────────────────────────────
+function openAddItemSheet() {
+  const bin = bins.find(b => b.id === currentBinId);
+  document.getElementById('add-item-bin-name').textContent = bin ? bin.name : '';
+  document.getElementById('item-label').value = '';
+  document.getElementById('item-notes').value = '';
+  document.getElementById('btn-save-item').disabled = true;
+  capturedBlob = null;
+  resetCameraUI();
+  openSheet('overlay-add-item');
+}
+
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width:{ideal:1280}, height:{ideal:720} }
+    });
+    cameraStream = stream;
+    const vid = document.getElementById('camera-video');
+    vid.srcObject = stream;
+    vid.style.display = 'block';
+    document.getElementById('camera-placeholder').style.display = 'none';
+    document.getElementById('photo-preview').style.display = 'none';
+    document.getElementById('btn-capture').disabled = false;
+    document.getElementById('btn-start-cam').disabled = true;
+  } catch(e) {
+    toast('Camera access denied — use Upload instead', true);
+  }
+}
+
+function capturePhoto() {
+  const vid    = document.getElementById('camera-video');
+  const canvas = document.getElementById('camera-canvas');
+  canvas.width  = vid.videoWidth;
+  canvas.height = vid.videoHeight;
+  canvas.getContext('2d').drawImage(vid, 0, 0);
+  canvas.toBlob(blob => {
+    capturedBlob = blob;
+    showPreview(URL.createObjectURL(blob));
+  }, 'image/jpeg', 0.85);
+  stopCamera();
+}
+
+function handleFileUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  capturedBlob = file;
+  showPreview(URL.createObjectURL(file));
+  e.target.value = '';
+}
+
+function showPreview(url) {
+  const prev = document.getElementById('photo-preview');
+  prev.src = url;
+  prev.style.display = 'block';
+  document.getElementById('camera-video').style.display = 'none';
+  document.getElementById('camera-placeholder').style.display = 'none';
+  document.getElementById('btn-save-item').disabled = false;
+  document.getElementById('btn-capture').disabled = true;
+  document.getElementById('btn-start-cam').disabled = false;
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  document.getElementById('camera-video').style.display = 'none';
+  document.getElementById('btn-capture').disabled = true;
+  document.getElementById('btn-start-cam').disabled = false;
+}
+
+function resetCameraUI() {
+  stopCamera();
+  document.getElementById('photo-preview').style.display = 'none';
+  document.getElementById('camera-placeholder').style.display = 'flex';
+  document.getElementById('camera-placeholder').style.alignItems = 'center';
+  document.getElementById('camera-placeholder').style.justifyContent = 'center';
+  document.getElementById('camera-placeholder').style.flexDirection = 'column';
+}
+
+async function saveItem() {
+  if (!capturedBlob) { toast('Take or upload a photo first'); return; }
+  const btn = document.getElementById('btn-save-item');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Saving…';
+
+  const fd = new FormData();
+  fd.append('bin_id', currentBinId);
+  fd.append('photo', capturedBlob, 'photo.jpg');
+  fd.append('label', document.getElementById('item-label').value.trim());
+  fd.append('notes', document.getElementById('item-notes').value.trim());
+
+  try {
+    const item = await fetch('/api/items', {method:'POST', body: fd}).then(r=>r.json());
+    closeSheet('overlay-add-item');
+    stopCamera();
+
+    if (_autoTag) {
+      toast(`Saved — queued for tagging`);
+    } else {
+      toast(`Saved — auto-tag is OFF, tap "Tag All" when ready`);
+    }
+
+    await loadBins();
+    renderBinsView();
+    loadBinItems();
+  } catch(e) {
+    toast('Save failed: ' + e.message, true);
+  }
+  btn.disabled = false;
+  btn.innerHTML = 'Save Item';
+}
+
+// ── INVENTORY ─────────────────────────────────────────────────────────────────
+async function loadInventoryView() {
+  const grid  = document.getElementById('inventory-grid');
+  const chips = document.getElementById('inv-bin-chips');
+  grid.innerHTML = '<div class="muted text-sm">Loading…</div>';
+
+  const url = invBinFilter ? `/api/items?bin_id=${invBinFilter}` : '/api/items';
+  const items = await api(url);
+
+  // render bin filter chips
+  chips.innerHTML = '';
+  const allChip = document.createElement('div');
+  allChip.className = 'chip' + (!invBinFilter ? ' active' : '');
+  allChip.textContent = `All (${items.length})`;
+  allChip.onclick = () => { invBinFilter = null; loadInventoryView(); };
+  chips.appendChild(allChip);
+
+  bins.forEach(b => {
+    const c = document.createElement('div');
+    c.className = 'chip' + (invBinFilter === b.id ? ' active' : '');
+    const cnt = items.filter(i => i.bin_id === b.id).length;
+    c.innerHTML = `<span class="bin-pip" style="background:${b.color}"></span> ${esc(b.name)} (${cnt})`;
+    c.onclick = () => { invBinFilter = b.id; loadInventoryView(); };
+    chips.appendChild(c);
+  });
+
+  const shown = invBinFilter ? items.filter(i => i.bin_id === invBinFilter) : items;
+  renderItemGrid(grid, shown);
+}
+
+// ── SEARCH ────────────────────────────────────────────────────────────────────
+function scheduleSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(doSearch, 350);
+}
+
+async function doSearch() {
+  const q = document.getElementById('search-input').value.trim();
+  const status = document.getElementById('search-status');
+  const results = document.getElementById('search-results');
+  if (!q) { results.innerHTML = ''; status.textContent = ''; return; }
+  status.textContent = 'Searching…';
+  try {
+    const items = await api(`/api/search?q=${encodeURIComponent(q)}`);
+    if (!items.length) {
+      results.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div>No results for "${esc(q)}"</div>`;
+      status.textContent = '';
+    } else {
+      status.textContent = `${items.length} result${items.length!==1?'s':''}`;
+      renderItemGrid(results, items, true);
+    }
+  } catch(e) {
+    status.textContent = 'Search error';
+  }
+}
+
+// ── ITEM GRID RENDERER ────────────────────────────────────────────────────────
+function renderItemGrid(container, items, showScore=false) {
+  container.innerHTML = '';
+  if (!items.length) {
+    container.innerHTML = `<div class="empty" style="grid-column:1/-1">
+      <div class="empty-icon">📦</div>
+      No items yet.<br>Tap <strong>+ Add Item</strong> to get started.
+    </div>`;
+    return;
+  }
+  items.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    card.onclick = () => openItemDetail(item);
+
+    const scoreHtml = showScore && item.score != null ? `
+      <div class="score-bar"><div class="score-fill" style="width:${Math.round(item.score*100*2)}%"></div></div>
+    ` : '';
+
+    card.innerHTML = `
+      <img src="${item.photo_url}" alt="${esc(item.label)}" loading="lazy">
+      <div class="item-card-body">
+        <div class="item-card-label">${esc(item.label || 'Unlabeled')}</div>
+        <div class="item-card-bin">
+          <span class="bin-pip" style="background:${item.bin_color}"></span>
+          ${esc(item.bin_name)}
+        </div>
+        ${scoreHtml}
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// ── ITEM DETAIL ───────────────────────────────────────────────────────────────
+async function openItemDetail(item) {
+  currentItemId = item.id;
+  document.getElementById('detail-photo').src   = item.photo_url;
+  document.getElementById('detail-label').value = item.label;
+  document.getElementById('detail-notes').value = item.notes;
+
+  // tags
+  const tagDiv = document.getElementById('detail-tags');
+  tagDiv.innerHTML = '';
+  if (item.tags) {
+    item.tags.split(',').map(t=>t.trim()).filter(Boolean).forEach(t => {
+      const span = document.createElement('span');
+      span.className = 'tag'; span.textContent = t;
+      tagDiv.appendChild(span);
+    });
+  }
+
+  // retag button
+  document.getElementById('detail-retag-row').style.display = 'block';
+
+  // WLED find button
+  const findRow = document.getElementById('item-find-row');
+  if (findRow) {
+    const haswled = _wledGlobalEnabled && item.bin_wled;
+    findRow.style.display = haswled ? 'block' : 'none';
+  }
+
+  // bin select
+  const sel = document.getElementById('detail-bin-select');
+  sel.innerHTML = '';
+  bins.forEach(b => {
+    const opt = document.createElement('option');
+    opt.value = b.id; opt.textContent = b.name;
+    if (b.id === item.bin_id) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  openSheet('overlay-item-detail');
+}
+
+async function saveItemDetail() {
+  try {
+    const updated = await api(`/api/items/${currentItemId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        label:  document.getElementById('detail-label').value.trim(),
+        notes:  document.getElementById('detail-notes').value.trim(),
+        bin_id: document.getElementById('detail-bin-select').value,
+      })
+    });
+    closeSheet('overlay-item-detail');
+    await loadBins();
+    renderBinsView();
+    // refresh whichever view is active
+    if (document.getElementById('view-bin-detail').classList.contains('active')) loadBinItems();
+    if (document.getElementById('view-inventory').classList.contains('active')) loadInventoryView();
+    toast('Item updated');
+  } catch(e) { toast(e.message, true); }
+}
+
+async function deleteItem() {
+  if (!confirm('Delete this item?')) return;
+  try {
+    await api(`/api/items/${currentItemId}`, {method:'DELETE'});
+    closeSheet('overlay-item-detail');
+    await loadBins();
+    renderBinsView();
+    if (document.getElementById('view-bin-detail').classList.contains('active')) loadBinItems();
+    if (document.getElementById('view-inventory').classList.contains('active')) loadInventoryView();
+    toast('Item deleted');
+  } catch(e) { toast(e.message, true); }
+}
+
+async function retagItem() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '⏳ Queuing…';
+  try {
+    await api(`/api/items/${currentItemId}/retag`, {method:'POST'});
+    // show queued state on the button — it will re-enable once tags come back
+    btn.textContent = '⚙ In queue…';
+    toast('Queued — tags will update once CLIP finishes');
+    pollClipStatus();
+    // poll until this specific item has tags, then refresh the detail view
+    const itemId = currentItemId;
+    const checkDone = async () => {
+      try {
+        const items = await api(`/api/items?bin_id=all`).catch(() => null);
+        // re-fetch this item directly via inventory endpoint
+        const res = await fetch(`/api/items`);
+        const all = await res.json();
+        const updated = all.find(i => i.id === itemId);
+        if (updated && updated.tags) {
+          // refresh tag chips in the open sheet if still viewing same item
+          if (currentItemId === itemId) {
+            const tagDiv = document.getElementById('detail-tags');
+            tagDiv.innerHTML = '';
+            updated.tags.split(',').map(t=>t.trim()).filter(Boolean).forEach(t => {
+              const span = document.createElement('span');
+              span.className = 'tag'; span.textContent = t;
+              tagDiv.appendChild(span);
+            });
+            if (!document.getElementById('detail-label').value && updated.label) {
+              document.getElementById('detail-label').value = updated.label;
+            }
+          }
+          btn.disabled = false;
+          btn.textContent = '🔄 Re-run ML tagging';
+          toast('Tags updated ✓');
+        } else {
+          setTimeout(checkDone, 3000);
+        }
+      } catch(e) {
+        btn.disabled = false;
+        btn.textContent = '🔄 Re-run ML tagging';
+      }
+    };
+    setTimeout(checkDone, 4000);
+  } catch(e) {
+    toast(e.message, true);
+    btn.disabled = false;
+    btn.textContent = '🔄 Re-run ML tagging';
+  }
+}
+
+// ── SHEETS ────────────────────────────────────────────────────────────────────
+function openSheet(id)  { document.getElementById(id).classList.add('active'); }
+function closeSheet(id) { document.getElementById(id).classList.remove('active'); }
+function closeAllSheets(e) {
+  if (e.target.classList.contains('overlay')) {
+    e.target.classList.remove('active');
+    stopCamera();
+  }
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg, err=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = err ? '#ef4444' : '#fff';
+  t.style.color = err ? '#fff' : '#111';
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── WLED GLOBAL ───────────────────────────────────────────────────────────────
+let _wledGlobalEnabled = false;
+let _wledDefaultIp     = '';
+let _wledCurrentBinId  = null;
+let _wledTotalLeds     = 30;   // updated after ping
+let _wledPreviewTimer  = null;
+
+// strip state (in the setup sheet)
+let _wS = { start: 0, len: 5, color: '#ffffff', brightness: 128, effect: 'solid' };
+
+async function loadWledGlobal() {
+  try {
+    const d = await api('/api/wled/settings');
+    _wledGlobalEnabled = d.enabled;
+    _wledDefaultIp     = d.default_ip;
+    updateWledGlobalUI();
+  } catch(e) {}
+}
+
+function updateWledGlobalUI() {
+  const btn = document.getElementById('wled-global-toggle');
+  if (!btn) return;
+  if (_wledGlobalEnabled) {
+    btn.textContent = '🟢 Enabled';
+    btn.style.background = '#0d2d20';
+    btn.style.color = '#34d399';
+  } else {
+    btn.textContent = '⚫ Disabled';
+    btn.style.background = 'var(--border)';
+    btn.style.color = 'var(--muted)';
+  }
+  if (document.getElementById('wled-global-ip')) {
+    document.getElementById('wled-global-ip').value = _wledDefaultIp;
+  }
+}
+
+function toggleWledGlobal() {
+  _wledGlobalEnabled = !_wledGlobalEnabled;
+  updateWledGlobalUI();
+}
+
+async function saveWledGlobal() {
+  const ip = document.getElementById('wled-global-ip').value.trim();
+  try {
+    await api('/api/wled/settings', {method:'POST', body: JSON.stringify({
+      enabled: _wledGlobalEnabled,
+      default_ip: ip,
+    })});
+    _wledDefaultIp = ip;
+    closeSheet('overlay-wled-global');
+    toast('WLED settings saved');
+    // refresh bin view to show/hide find buttons
+    await loadBins();
+    renderBinsView();
+  } catch(e) { toast(e.message, true); }
+}
+
+async function pingWled(ip, resultId) {
+  const el = document.getElementById(resultId);
+  if (!ip) { el.textContent = 'Enter an IP first'; el.style.color = 'var(--danger)'; return; }
+  el.textContent = 'Pinging…'; el.style.color = 'var(--muted)';
+  try {
+    const d = await api('/api/wled/ping', {method:'POST', body: JSON.stringify({ip})});
+    el.textContent = `✓ ${d.name}  •  ${d.led_count} LEDs  •  v${d.version}`;
+    el.style.color = 'var(--success)';
+    _wledTotalLeds = d.led_count || 30;
+    renderLedStrip();
+  } catch(e) {
+    el.textContent = '✗ ' + (e.message || 'Cannot reach device');
+    el.style.color = 'var(--danger)';
+  }
+}
+
+// ── WLED BIN SETUP ────────────────────────────────────────────────────────────
+async function openWledSheet(binId) {
+  _wledCurrentBinId = binId;
+  const bin = bins.find(b => b.id === binId);
+  if (!bin) return;
+
+  document.getElementById('wled-bin-name').textContent = bin.name;
+  document.getElementById('wled-bin-ip').value         = bin.wled_ip || _wledDefaultIp;
+  document.getElementById('wled-bin-enabled').checked  = bin.wled_enabled;
+  document.getElementById('wled-bin-duration').value   = bin.wled_duration ?? 10;
+
+  _wS = {
+    start:      bin.wled_seg_start  ?? 0,
+    len:        bin.wled_seg_len    ?? 5,
+    color:      bin.wled_color      || '#ffffff',
+    brightness: bin.wled_brightness ?? 128,
+    effect:     bin.wled_effect     || 'solid',
+  };
+
+  document.getElementById('wled-bin-color').value      = _wS.color;
+  document.getElementById('wled-bin-brightness').value = _wS.brightness;
+  updateBrightnessLabel();
+  setEffect(_wS.effect, false);
+  renderLedStrip();
+  openSheet('overlay-wled-bin');
+  sendPreview();
+}
+
+function renderLedStrip() {
+  const strip = document.getElementById('wled-led-strip');
+  if (!strip) return;
+  const total   = Math.min(_wledTotalLeds, 60);   // show max 60 in visualizer
+  const start   = _wS.start;
+  const end     = start + _wS.len;
+  const hexCol  = _wS.color;
+  const alpha   = (_wS.brightness / 255).toFixed(2);
+
+  strip.innerHTML = '';
+  for (let i = 0; i < total; i++) {
+    const pip = document.createElement('div');
+    pip.className = 'led-pip';
+    if (i >= start && i < end) {
+      pip.classList.add('active');
+      pip.style.background = hexCol;
+      pip.style.opacity    = alpha;
+      pip.style.boxShadow  = `0 0 6px 2px ${hexCol}88`;
+    }
+    strip.appendChild(pip);
+  }
+  document.getElementById('wled-strip-label').textContent =
+    `LEDs ${_wS.start}–${_wS.start + _wS.len - 1} (${_wS.len} LEDs)`;
+}
+
+function jogStrip(delta) {
+  _wS.start = Math.max(0, _wS.start + delta);
+  renderLedStrip();
+  sendPreview();
+}
+
+function resizeStrip(delta) {
+  _wS.len = Math.max(1, _wS.len + delta);
+  renderLedStrip();
+  sendPreview();
+}
+
+function setEffect(eff, preview=true) {
+  _wS.effect = eff;
+  document.getElementById('effect-solid').classList.toggle('active', eff === 'solid');
+  document.getElementById('effect-pulse').classList.toggle('active', eff === 'pulse');
+  if (preview) sendPreview();
+}
+
+function updateBrightnessLabel() {
+  const v = document.getElementById('wled-bin-brightness').value;
+  document.getElementById('wled-brightness-label').textContent = v;
+  _wS.brightness = parseInt(v);
+  renderLedStrip();
+}
+
+// Debounced live preview sender
+let _previewTimer = null;
+function sendPreview() {
+  _wS.color      = document.getElementById('wled-bin-color')?.value      || _wS.color;
+  _wS.brightness = parseInt(document.getElementById('wled-bin-brightness')?.value || _wS.brightness);
+  renderLedStrip();
+  clearTimeout(_previewTimer);
+  _previewTimer = setTimeout(async () => {
+    const ip = document.getElementById('wled-bin-ip')?.value.trim();
+    if (!ip) return;
+    try {
+      await api('/api/wled/preview', {method:'POST', body: JSON.stringify({
+        ip,
+        seg_start:  _wS.start,
+        seg_len:    _wS.len,
+        color:      _wS.color,
+        brightness: _wS.brightness,
+        effect:     _wS.effect,
+      })});
+    } catch(e) { /* device offline — ignore */ }
+  }, 300);
+}
+
+async function wledPreviewOff() {
+  const ip = document.getElementById('wled-bin-ip')?.value.trim() || _wledDefaultIp;
+  if (!ip) return;
+  try { await api('/api/wled/off', {method:'POST', body: JSON.stringify({ip})}); } catch(e) {}
+}
+
+async function pingWledBin() {
+  const ip = document.getElementById('wled-bin-ip').value.trim();
+  await pingWled(ip, 'wled-bin-ping-result');
+}
+
+async function saveWledBin() {
+  const ip       = document.getElementById('wled-bin-ip').value.trim();
+  const enabled  = document.getElementById('wled-bin-enabled').checked;
+  const duration = parseInt(document.getElementById('wled-bin-duration').value) || 10;
+  if (!ip) { toast('Enter the WLED device IP', true); return; }
+  try {
+    await api(`/api/bins/${_wledCurrentBinId}`, {method:'PUT', body: JSON.stringify({
+      wled_enabled:    enabled,
+      wled_ip:         ip,
+      wled_seg_start:  _wS.start,
+      wled_seg_len:    _wS.len,
+      wled_color:      _wS.color,
+      wled_brightness: _wS.brightness,
+      wled_effect:     _wS.effect,
+      wled_duration:   duration,
+    })});
+    await loadBins();
+    closeSheet('overlay-wled-bin');
+    wledPreviewOff();
+    // refresh bin detail header
+    openBin(_wledCurrentBinId);
+    toast('WLED config saved');
+  } catch(e) { toast(e.message, true); }
+}
+
+// ── FIND ──────────────────────────────────────────────────────────────────────
+let _findOffTimer = null;
+
+async function findBin(binId) {
+  const btn = document.getElementById('bin-find-btn');
+  if (btn) { btn.classList.add('firing'); btn.textContent = '💡 Lit!'; }
+  clearTimeout(_findOffTimer);
+  try {
+    const r = await api(`/api/wled/find/${binId}`, {method:'POST', body:'{}'});
+    if (r.duration > 0) {
+      _findOffTimer = setTimeout(async () => {
+        try { await api('/api/wled/off', {method:'POST', body: JSON.stringify({ip: r.ip})}); } catch(e) {}
+        if (btn) { btn.classList.remove('firing'); btn.textContent = '💡 Find'; }
+      }, r.duration * 1000);
+    } else {
+      if (btn) { setTimeout(() => { btn.classList.remove('firing'); btn.textContent = '💡 Find'; }, 1500); }
+    }
+  } catch(e) {
+    toast('WLED error: ' + e.message, true);
+    if (btn) { btn.classList.remove('firing'); btn.textContent = '💡 Find'; }
+  }
+}
+
+async function findBinFromItem() {
+  // find the bin for the currently open item
+  const sel   = document.getElementById('detail-bin-select');
+  const binId = sel ? sel.value : null;
+  if (!binId) { toast('No bin selected', true); return; }
+  const btn = event.target;
+  btn.classList.add('firing');
+  btn.textContent = '💡 Lit!';
+  clearTimeout(_findOffTimer);
+  try {
+    const r = await api(`/api/wled/find/${binId}`, {method:'POST', body:'{}'});
+    if (r.duration > 0) {
+      _findOffTimer = setTimeout(async () => {
+        try { await api('/api/wled/off', {method:'POST', body: JSON.stringify({ip: r.ip})}); } catch(e) {}
+        btn.classList.remove('firing');
+        btn.textContent = "💡 Find This Item's Bin";
+      }, r.duration * 1000);
+    } else {
+      setTimeout(() => { btn.classList.remove('firing'); btn.textContent = "💡 Find This Item's Bin"; }, 1500);
+    }
+  } catch(e) {
+    toast('WLED error: ' + e.message, true);
+    btn.classList.remove('firing');
+    btn.textContent = "💡 Find This Item's Bin";
+  }
+}
+</script>
+</body>
+</html>
