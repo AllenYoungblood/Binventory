@@ -1,0 +1,78 @@
+# ── BINventory — docker-compose.yml ──────────────────────────────────────────
+# Usage:
+#   Start:   docker compose up -d
+#   Stop:    docker compose down
+#   Logs:    docker compose logs -f
+#   Rebuild: docker compose up -d --build
+
+services:
+  binventory:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: binventory
+
+    restart: unless-stopped          # auto-restart on crash or system reboot
+
+    ports:
+      - "${HOST_PORT:-5000}:5000"    # change HOST_PORT in .env to use another port
+
+    volumes:
+      # ── Persistent data (named volumes: survive restarts AND rebuilds) ─────
+      # binventory_uploads → item photos
+      # binventory_data    → SQLite DB, CLIP weights, EasyOCR weights,
+      #                       and the cached label-embedding files
+      - binventory_uploads:/app/static/uploads
+      - binventory_data:/app/data
+
+      # ── Tag dictionaries (bind mount: edit them from your host) ────────────
+      # Mounted from the project folder so you can open the .txt files in any
+      # editor, disable a category by renaming it to *.off, and use
+      # ⚙ -> Dictionaries -> "Reload from disk" without rebuilding.
+      # The app also WRITES here (Vocabulary Review -> Add to Dictionary), so
+      # this mount must be writable — see the permissions note in DEPLOY.md.
+      - ./dictionaries:/app/dictionaries
+
+    environment:
+      - PYTHONUNBUFFERED=1
+
+      # Keep the SQLite DB inside the persisted volume. Without this it would
+      # live in the container layer and be LOST on every rebuild.
+      - BINVENTORY_DB_DIR=/app/data
+
+      # Model caches also live in the persisted volume, so the CLIP (~350 MB)
+      # and EasyOCR (~100 MB) weights download only once, ever.
+      - HF_HOME=/app/data/hf_cache
+      - TORCH_HOME=/app/data/torch_cache
+      - EASYOCR_MODULE_PATH=/app/data/easyocr
+
+      - FLASK_ENV=${FLASK_ENV:-production}
+
+    # ── Resources ─────────────────────────────────────────────────────────────
+    # CLIP (~1.4 GB) and EasyOCR (~0.7 GB) can be resident at the same time
+    # during a tagging run that uses both, so 2 GB is not enough. The app
+    # unloads both once idle (see Model Keep-Alive in Settings), so steady-state
+    # usage is far lower than this ceiling.
+    deploy:
+      resources:
+        limits:
+          memory: ${MEM_LIMIT:-4g}
+        reservations:
+          memory: 512m
+
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/status')"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+# ── Named volumes ─────────────────────────────────────────────────────────────
+# Docker manages these on your host. Inspect with:
+#   docker volume inspect binventory_data
+# Backup instructions are in DEPLOY.md.
+volumes:
+  binventory_uploads:
+  binventory_data:

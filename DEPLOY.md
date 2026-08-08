@@ -121,10 +121,15 @@ data (photos, database) are in named volumes and are never touched by a rebuild.
 Photos and the database live in Docker named volumes — they persist across
 restarts, rebuilds, and even container deletion.
 
-| Volume | Contents |
-|--------|----------|
-| `binventory_uploads` | All item photos |
-| `binventory_data` | SQLite database + CLIP model cache |
+| Location | Type | Contents |
+|----------|------|----------|
+| `binventory_uploads` | named volume | All item photos |
+| `binventory_data` | named volume | SQLite DB, CLIP weights, EasyOCR weights, cached label embeddings |
+| `./dictionaries` | bind mount | Tag vocabulary — edit these on your host |
+
+The `dictionaries/` folder is bind-mounted rather than a named volume so you can
+open the `.txt` files in any editor. Changes apply via ⚙ → Dictionaries →
+**Reload from disk** — no rebuild or restart needed.
 
 ### Backup
 ```bash
@@ -182,7 +187,62 @@ docker compose up -d --build
 
 ---
 
+## Editing dictionaries (Docker)
+
+Because `./dictionaries` is bind-mounted, edit the files right in your project
+folder:
+
+```bash
+nano dictionaries/17_electronics.txt         # add terms
+mv dictionaries/11_kids_toys.txt \
+   dictionaries/11_kids_toys.txt.off         # disable a category
+```
+
+Then in the app: ⚙ → Dictionaries → **Reload from disk**.
+
+### Permissions note (Linux)
+
+The container runs as UID 1000. If your host user has a different UID, the app
+may fail to write `dictionaries/98_reviewed.txt` when you use Vocabulary Review
+→ *Add to Dictionary*. Fix by granting group write access:
+
+```bash
+sudo chown -R 1000:1000 ./dictionaries
+```
+
+On macOS and Windows (Docker Desktop) this is handled automatically.
+
+## Memory sizing
+
+CLIP (~1.4 GB) and EasyOCR (~0.7 GB) can both be resident during a tagging run
+that uses OCR, so the default limit is **4 GB**. Override in `.env`:
+
+```
+MEM_LIMIT=2g     # enough for CLIP alone (OCR disabled)
+MEM_LIMIT=6g     # comfortable headroom on a large machine
+```
+
+The app unloads both models once idle (⚙ → Model Keep-Alive), so steady-state
+memory is a small fraction of this ceiling. If the container is killed mid-tagging
+with exit code 137, it ran out of memory — raise `MEM_LIMIT`.
+
+## First run: model downloads
+
+On first use the container downloads model weights into the `binventory_data`
+volume — CLIP ~350 MB (first tagging or smart search) and EasyOCR ~100 MB (first
+OCR job). These persist across rebuilds; only `docker compose down -v` removes them.
+
 ## Troubleshooting
+
+**Tagging produces no tags / vocabulary is empty:**
+The `dictionaries/` folder didn't make it into the container. Confirm it sits
+next to `docker-compose.yml`, then `docker compose up -d --build`. Verify with:
+```bash
+docker compose exec binventory ls dictionaries/
+```
+
+**Container exits with code 137 during tagging:**
+Out of memory. Raise `MEM_LIMIT` in `.env` (see Memory sizing above).
 
 **Port already in use:**
 Change `HOST_PORT` in `.env` to any unused port (e.g. `5001`).

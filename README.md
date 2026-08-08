@@ -78,8 +78,11 @@ Edit `.env` only if you want a different port (default `5000`).
 ```bash
 docker compose up -d
 ```
-First build takes ~5–10 minutes (downloads CPU-only PyTorch). Every start
-after that is seconds.
+First build takes ~5–10 minutes (downloads CPU-only PyTorch + EasyOCR deps).
+Every start after that is seconds.
+
+> Make sure the **`dictionaries/`** folder sits next to `docker-compose.yml` —
+> it holds the tag vocabulary and is bind-mounted so you can edit it live.
 
 **4. Open the app:**
 - On this machine: `http://localhost:5000`
@@ -102,7 +105,10 @@ Three things persist in named volumes and survive restarts **and** rebuilds:
 | Volume | Contents |
 |--------|----------|
 | `binventory_uploads` | all item photos |
-| `binventory_data` | SQLite database + CLIP model cache |
+| `binventory_data` | SQLite DB + CLIP and EasyOCR model caches |
+
+Plus `./dictionaries` is bind-mounted from your project folder, so tag
+vocabulary is edited directly on the host.
 
 The only command that destroys data is `docker compose down -v` (the `-v`
 deletes volumes). Plain `down`, `restart`, and `--build` are always safe.
