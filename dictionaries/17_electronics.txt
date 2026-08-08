@@ -1,0 +1,321 @@
+# Electronics
+# One term per line. Blank lines and lines starting with # are ignored.
+# To DISABLE this whole category, rename the file to end in .off
+# (e.g. 17_electronics.txt.off). Restart the server after editing.
+
+Arduino Uno
+Arduino Nano
+Arduino Mega
+Arduino Pro Micro
+Arduino Leonardo
+Raspberry Pi
+Raspberry Pi Pico
+Raspberry Pi Zero
+ESP32 dev board
+ESP8266 board
+NodeMCU
+Wemos D1 mini
+STM32 board
+Blue Pill board
+Teensy board
+ATtiny chip
+ATmega328 chip
+microcontroller
+development board
+single board computer
+BeagleBone
+Orange Pi
+Micro:bit
+CircuitPython board
+RP2040 board
+Seeed Xiao
+Adafruit Feather
+Adafruit Trinket
+breakout board
+sensor module
+IMU module
+MPU6050 module
+accelerometer module
+gyroscope module
+magnetometer board
+temperature sensor
+DHT11 sensor
+DHT22 sensor
+DS18B20 sensor
+humidity sensor
+pressure sensor
+BMP280 module
+barometer module
+ultrasonic sensor
+HC-SR04 sensor
+PIR motion sensor
+light sensor
+photoresistor
+LDR
+hall effect sensor
+current sensor
+ACS712 module
+RTC module
+DS3231 module
+GPS module
+NEO-6M module
+RFID reader
+RC522 module
+fingerprint sensor
+load cell
+HX711 module
+gas sensor
+MQ-2 sensor
+sound sensor
+microphone module
+OLED display
+SSD1306 display
+LCD module
+16x2 LCD
+TFT display
+e-paper display
+seven segment display
+LED matrix
+NeoPixel ring
+WS2812 strip
+addressable LED strip
+dot matrix module
+Bluetooth module
+HC-05 module
+HC-06 module
+BLE module
+WiFi module
+ESP-01 module
+NRF24L01 module
+LoRa module
+RF transmitter
+RF receiver
+RS485 module
+CAN bus module
+ethernet module
+W5500 module
+GSM module
+SIM800 module
+stepper motor
+NEMA 17 motor
+NEMA 23 motor
+DC motor
+geared motor
+servo motor
+SG90 servo
+MG996R servo
+brushless motor
+BLDC motor
+vibration motor
+linear actuator
+solenoid
+pump motor
+fan
+cooling fan
+motor driver
+L298N driver
+DRV8825 driver
+A4988 driver
+TMC2208 driver
+stepper driver
+ESC controller
+servo driver
+PCA9685 board
+H-bridge module
+relay module
+solid state relay
+MOSFET module
+motor controller
+buck converter
+boost converter
+buck-boost converter
+LM2596 module
+MT3608 module
+voltage regulator
+LDO regulator
+7805 regulator
+AMS1117 module
+DC-DC converter
+power supply module
+battery charger module
+TP4056 module
+BMS board
+18650 holder
+battery holder
+LiPo battery
+Li-ion cell
+boost charger
+power bank module
+inverter module
+USB power module
+analog to digital converter
+ADC module
+ADS1115 module
+digital to analog converter
+DAC module
+level shifter
+logic level converter
+I2C multiplexer
+shift register
+74HC595 chip
+multiplexer
+op-amp
+comparator
+555 timer
+voltage divider
+Wheatstone bridge module
+instrumentation amp
+resistor
+resistor pack
+resistor kit
+potentiometer
+trimpot
+rheostat
+capacitor
+electrolytic capacitor
+ceramic capacitor
+film capacitor
+tantalum capacitor
+supercapacitor
+capacitor kit
+inductor
+ferrite bead
+ferrite core
+transformer
+crystal oscillator
+resonator
+varistor
+thermistor
+NTC thermistor
+diode
+rectifier diode
+Schottky diode
+Zener diode
+LED
+RGB LED
+infrared LED
+laser diode
+photodiode
+phototransistor
+transistor
+NPN transistor
+PNP transistor
+BJT
+MOSFET
+N-channel MOSFET
+P-channel MOSFET
+IGBT
+TRIAC
+thyristor
+SCR
+optocoupler
+voltage reference
+integrated circuit
+logic gate IC
+microchip
+EEPROM chip
+flash memory chip
+shift register IC
+breadboard
+solderless breadboard
+perfboard
+protoboard
+stripboard
+jumper wire
+Dupont wire
+ribbon cable
+header pins
+male header
+female header
+screw terminal
+terminal block
+JST connector
+JST-XH connector
+Molex connector
+barrel jack
+DC jack
+USB connector
+micro USB connector
+USB-C connector
+pin socket
+IC socket
+DIP socket
+banana plug
+alligator clip
+test lead
+crimp connector
+spade connector
+ring terminal
+heat shrink
+wire ferrule
+soldering iron
+soldering station
+solder wire
+solder paste
+flux pen
+desoldering pump
+solder wick
+helping hands
+PCB holder
+multimeter
+oscilloscope
+logic analyzer
+bench power supply
+function generator
+hot air rework station
+tweezers
+wire stripper
+flush cutter
+crimping tool
+ESD strap
+antistatic bag
+component organizer
+SMD storage box
+printed circuit board
+PCB
+blank PCB
+prototype PCB
+PCB panel
+flexible PCB
+double-sided PCB
+3D printer nozzle
+brass nozzle
+hardened nozzle
+heater block
+heater cartridge
+thermistor cartridge
+heatbreak
+PTFE tube
+Bowden tube
+extruder gear
+extruder assembly
+hotend
+stepper motor 3D printer
+GT2 belt
+GT2 pulley
+idler pulley
+linear rail
+linear bearing
+LM8UU bearing
+smooth rod
+lead screw
+T8 lead screw
+coupler
+limit switch
+endstop switch
+3D printer mainboard
+stepper driver module
+filament spool
+PLA filament
+PETG filament
+ABS filament
+TPU filament
+build plate
+PEI sheet
+glass bed
+heated bed
+BLTouch sensor
+cooling fan duct
+part cooling fan
+print head
+carriage

@@ -1,0 +1,108 @@
+# Hand Tools
+# One term per line. Blank lines and lines starting with # are ignored.
+# To DISABLE this whole category, rename the file to end in .off
+# (e.g. 01_hand_tools.txt.off). Restart the server after editing.
+
+screwdriver
+Phillips screwdriver
+flathead screwdriver
+hammer
+claw hammer
+mallet
+rubber mallet
+wrench
+adjustable wrench
+combination wrench
+socket wrench
+torque wrench
+pliers
+needle-nose pliers
+locking pliers
+channel-lock pliers
+wire stripper
+wire cutter
+bolt cutter
+tin snips
+utility knife
+box cutter
+exacto knife
+chisel
+wood chisel
+cold chisel
+gouge
+hand saw
+hacksaw
+coping saw
+keyhole saw
+jab saw
+tape measure
+measuring tape
+ruler
+level
+torpedo level
+speed square
+combination square
+framing square
+protractor
+Allen key
+hex key
+Allen wrench
+Torx key
+spanner
+nut driver
+ratchet
+socket
+extension bar
+breaker bar
+pry bar
+crowbar
+wrecking bar
+cat's paw
+nail puller
+staple gun
+brad nailer
+punch
+center punch
+awl
+putty knife
+scraper
+floor scraper
+paint scraper
+trowel
+margin trowel
+notched trowel
+grout float
+caulk gun
+glue gun
+clamp
+C-clamp
+bar clamp
+spring clamp
+pipe clamp
+vise grip
+bench vise
+woodworking clamp
+strap clamp
+file
+rasp
+wood rasp
+metal file
+needle file
+sandpaper block
+sanding block
+hand plane
+block plane
+spokeshave
+marking gauge
+bevel gauge
+chalk line
+plumb bob
+compass
+nail set
+drift punch
+pin punch
+scribe
+stud finder
+voltage tester
+multimeter
+continuity tester
