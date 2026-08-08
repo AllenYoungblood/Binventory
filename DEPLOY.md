@@ -1,6 +1,6 @@
 # BINventory — Deployment Guide
 
-## Prerequisites
+## Prerequisites (Docker deployment not finalized Manual Deploy option at the bottom of this document)
 
 Install **Docker Desktop** (includes Docker Compose):
 
