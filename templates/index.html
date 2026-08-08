@@ -746,7 +746,11 @@
         <span id="queue-badge" style="display:none;font-size:0.72rem;font-weight:700;background:#2d1f5e;color:#a78bfa;padding:3px 8px;border-radius:20px;white-space:nowrap;"></span>
         <button id="autotag-btn" onclick="toggleAutoTag()" title="Toggle auto-tagging" style="font-size:0.72rem;font-weight:700;padding:3px 8px;border-radius:20px;border:none;cursor:pointer;white-space:nowrap;"></button>
         <button id="runtags-btn" onclick="runAllTags()" title="Tag all untagged items now" style="display:none;font-size:0.72rem;font-weight:700;padding:3px 8px;border-radius:20px;border:none;cursor:pointer;background:#0d2d20;color:#34d399;white-space:nowrap;">▶ Tag All</button>
-        <button onclick="openSheet('overlay-ml-settings')" title="ML Settings" style="background:var(--border);border:none;border-radius:20px;padding:3px 8px;cursor:pointer;color:var(--muted);font-size:0.78rem;">⚙</button>
+        <button onclick="openSheet('overlay-ml-settings');loadOcrSettings();loadDictionaries()" title="ML Settings" style="background:var(--border);border:none;border-radius:20px;padding:3px 8px;cursor:pointer;color:var(--muted);font-size:0.78rem;">⚙</button>
+        <button onclick="openShoppingList()" title="Shopping List" style="position:relative;background:var(--border);border:none;border-radius:20px;padding:3px 8px;cursor:pointer;color:var(--muted);font-size:0.85rem;">
+          🛒
+          <span id="cart-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#f87171;color:#fff;font-size:0.62rem;font-weight:700;border-radius:10px;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 2px;"></span>
+        </button>
       </div>
     </div>
   </header>
@@ -784,7 +788,7 @@
           <div id="bin-detail-location" class="text-sm muted"></div>
         </div>
         <div style="margin-left:auto;display:flex;gap:8px;">
-          <button class="btn-icon" onclick="openEditBinSheet()" title="Edit bin">
+          <button class="btn-icon" id="bin-edit-btn" onclick="openEditBinSheet()" title="Edit bin">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
           <button id="bin-find-btn" class="find-btn" style="display:none" onclick="findBin(currentBinId)">
@@ -793,7 +797,7 @@
           <button class="btn-icon" id="bin-wled-btn" onclick="openWledSheet(currentBinId)" style="display:none" title="WLED Setup">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           </button>
-          <button class="btn btn-primary btn-sm" onclick="openAddItemSheet()">
+          <button class="btn btn-primary btn-sm" id="bin-add-item-btn" onclick="openAddItemSheet()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Item
           </button>
@@ -815,6 +819,8 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" id="search-input" placeholder="screwdriver, red cable, hammer…" oninput="scheduleSearch()" autocomplete="off">
         </div>
+        <button id="smart-search-btn" onclick="doSmartSearch()" title="Smart search — loads the ML model to match by meaning"
+          style="flex-shrink:0;background:#1a1530;border:1px solid #3d2f7a;color:#a78bfa;border-radius:8px;padding:0 12px;font-size:1rem;cursor:pointer;">✨</button>
       </div>
       <div id="search-status" class="muted text-sm mb-12"></div>
       <div id="search-results" class="item-grid"></div>
@@ -856,7 +862,50 @@
     <div class="field"><label>Color</label><input id="edit-bin-color" type="color"></div>
     <button class="btn btn-primary btn-full mb-12" onclick="saveBinEdit()">Save Changes</button>
     <hr class="divider">
-    <button class="btn btn-danger btn-full" onclick="confirmDeleteBin()">Delete This Bin & All Items</button>
+    <button class="btn btn-danger btn-full" onclick="openDeleteBinSheet()">🗑 Remove This Bin…</button>
+  </div>
+</div>
+
+<!-- Secure Delete Bin Sheet -->
+<div id="overlay-delete-bin" class="overlay" onclick="closeAllSheets(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      <span style="color:var(--danger)">Remove Bin</span>
+      <button class="btn-icon" onclick="closeSheet('overlay-delete-bin')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div style="background:#2d1515;border:1px solid #4a1f1f;border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+      <div style="font-size:0.9rem;font-weight:700;color:var(--danger);margin-bottom:4px;">
+        ⚠️ You are about to remove "<span id="delete-bin-name"></span>"
+      </div>
+      <div style="font-size:0.82rem;color:var(--muted);line-height:1.5;">
+        This bin contains <strong id="delete-bin-count">0 items</strong> and its WLED settings will be lost. This cannot be undone.
+      </div>
+    </div>
+
+    <div class="wled-section-title">What should happen to the contents?</div>
+    <div class="effect-row mb-12" style="flex-direction:column;gap:8px;">
+      <button class="effect-btn active" id="del-mode-checkout" onclick="setDeleteMode('checkout')" style="text-align:left;padding:12px;">
+        📤 <strong>Check items out of inventory</strong><br>
+        <span style="font-size:0.74rem;color:var(--muted);font-weight:400;">Items are preserved in the Checked Out list with their photos and tags. You can re-bin them later.</span>
+      </button>
+      <button class="effect-btn" id="del-mode-delete" onclick="setDeleteMode('delete')" style="text-align:left;padding:12px;">
+        🗑 <strong>Delete all contents permanently</strong><br>
+        <span style="font-size:0.74rem;color:var(--muted);font-weight:400;">Every item in this bin and its photos are permanently erased.</span>
+      </button>
+    </div>
+
+    <div class="field">
+      <label>Type <strong style="color:var(--danger)">delete</strong> to confirm</label>
+      <input type="text" id="delete-confirm-input" placeholder="delete" autocomplete="off" oninput="checkDeleteConfirm()">
+    </div>
+
+    <button class="btn btn-danger btn-full" id="delete-bin-confirm-btn" onclick="executeDeleteBin()" disabled style="opacity:0.5;">
+      Remove Bin
+    </button>
   </div>
 </div>
 
@@ -897,7 +946,29 @@
       </label>
     </div>
 
-    <div class="field"><label>Label (auto-filled from ML)</label><input id="item-label" type="text" placeholder="e.g. Phillips screwdriver"></div>
+    <!-- Manual rotation, shown once a photo is staged. Orientation matters a
+         lot for OCR and CLIP accuracy, so give the user a direct correction. -->
+    <div id="rotate-controls" style="display:none;align-items:center;gap:8px;margin-bottom:12px;">
+      <span style="font-size:0.76rem;color:var(--muted);">Orientation</span>
+      <button class="jog-btn" onclick="rotateStaged(-90)" title="Rotate left">↺ 90°</button>
+      <button class="jog-btn" onclick="rotateStaged(90)" title="Rotate right">↻ 90°</button>
+      <span style="font-size:0.72rem;color:var(--muted);">Upright photos scan best</span>
+    </div>
+
+    <!-- OCR toggle: reads printed text off the photo (part numbers, labels) -->
+    <div class="schedule-panel" style="margin-bottom:14px;padding:10px 12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div>
+          <div style="font-size:0.85rem;font-weight:600;">🔤 Read text on item (OCR)</div>
+          <div style="font-size:0.74rem;color:var(--muted);margin-top:2px;">
+            Extracts printed labels/part numbers. Used as the name if you leave it blank.
+          </div>
+        </div>
+        <button id="item-ocr-toggle" onclick="toggleItemOcr()" style="flex-shrink:0;font-size:0.78rem;font-weight:700;padding:6px 12px;border-radius:20px;border:none;cursor:pointer;white-space:nowrap;"></button>
+      </div>
+    </div>
+
+    <div class="field"><label>Label (leave blank to auto-fill)</label><input id="item-label" type="text" placeholder="e.g. Phillips screwdriver"></div>
     <div class="field"><label>Notes (optional)</label><textarea id="item-notes" placeholder="Details, size, brand…"></textarea></div>
 
     <button class="btn btn-primary btn-full" id="btn-save-item" onclick="saveItem()" disabled>Save Item</button>
@@ -914,25 +985,43 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
+    <div id="detail-status-banner" style="display:none;font-size:0.78rem;font-weight:700;padding:7px 11px;border-radius:8px;margin-bottom:12px;"></div>
     <img id="detail-photo" class="item-detail-photo">
     <div class="field"><label>Label</label><input id="detail-label" type="text"></div>
     <div class="field"><label>Notes</label><textarea id="detail-notes"></textarea></div>
-    <div class="field">
+    <div class="field" id="detail-bin-field">
       <label>Move to Bin</label>
       <select id="detail-bin-select"></select>
     </div>
     <div id="detail-tags" class="tag-list mb-12"></div>
+    <div id="detail-label-source" style="display:none;font-size:0.72rem;color:var(--muted);margin-top:-8px;margin-bottom:10px;"></div>
+    <div id="detail-ocr-text" style="display:none;font-size:0.76rem;color:var(--accent2);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:10px;word-break:break-word;"></div>
     <div id="detail-retag-row" style="display:none" class="mb-12">
       <button class="btn btn-secondary btn-sm" onclick="retagItem()">🔄 Re-run ML tagging</button>
+      <button class="btn btn-secondary btn-sm" onclick="runItemOcr()">🔤 Run OCR</button>
+      <button class="btn btn-secondary btn-sm" onclick="rotateSavedItem()">↻ Rotate</button>
     </div>
     <div id="item-find-row" style="display:none;margin-bottom:10px;">
       <button class="find-btn btn-full" style="width:100%;justify-content:center;" onclick="findBinFromItem()">
         💡 Find This Item's Bin
       </button>
     </div>
-    <div style="display:flex;gap:8px;">
-      <button class="btn btn-primary" style="flex:1" onclick="saveItemDetail()">Save</button>
-      <button class="btn btn-danger" onclick="deleteItem()">Delete</button>
+
+    <!-- Checkout / Return -->
+    <div id="checkout-row" style="display:none;margin-bottom:10px;">
+      <button class="btn btn-secondary btn-full" id="checkout-btn" onclick="toggleCheckout()"></button>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button class="btn btn-primary" style="flex:1" id="detail-save-btn" onclick="saveItemDetail()">Save</button>
+      <button class="btn btn-danger" id="detail-delete-btn" onclick="deleteItem()">Delete</button>
+    </div>
+
+    <!-- Consume -->
+    <div id="consume-row" style="display:none;">
+      <button class="btn btn-secondary btn-full" style="color:var(--warn);border:1px solid #4a3a0a;" onclick="consumeItem()">
+        🛒 Consume Item (move to shopping list)
+      </button>
     </div>
   </div>
 </div>
@@ -983,6 +1072,87 @@
         <button class="btn btn-primary btn-sm" onclick="saveSchedule()">Set Schedule</button>
         <button class="btn btn-secondary btn-sm" id="clear-sched-btn" style="display:none" onclick="clearSchedule()">Clear Schedule</button>
       </div>
+    </div>
+
+    <!-- OCR settings -->
+    <div class="schedule-panel mt-8">
+      <label>Text Recognition (OCR)</label>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
+        <div style="font-size:0.82rem;color:var(--muted);line-height:1.4;flex:1;">
+          Default state of the OCR toggle when adding a new item.
+        </div>
+        <button id="set-ocr-default" onclick="toggleOcrSetting('ocr_default_on')" style="flex-shrink:0;font-size:0.78rem;font-weight:700;padding:6px 12px;border-radius:20px;border:none;cursor:pointer;white-space:nowrap;"></button>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
+        <div style="font-size:0.82rem;color:var(--muted);line-height:1.4;flex:1;">
+          Include the recognized text as searchable tags.
+        </div>
+        <button id="set-ocr-tags" onclick="toggleOcrSetting('ocr_as_tags')" style="flex-shrink:0;font-size:0.78rem;font-weight:700;padding:6px 12px;border-radius:20px;border:none;cursor:pointer;white-space:nowrap;"></button>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
+        <div style="font-size:0.82rem;color:var(--muted);line-height:1.4;flex:1;">
+          Truncate OCR text stored as tags.
+        </div>
+        <button id="set-ocr-trunc" onclick="toggleOcrSetting('ocr_truncate')" style="flex-shrink:0;font-size:0.78rem;font-weight:700;padding:6px 12px;border-radius:20px;border:none;cursor:pointer;white-space:nowrap;"></button>
+      </div>
+
+      <div id="ocr-trunc-len-row" class="time-row" style="margin-bottom:10px;">
+        <span style="font-size:0.78rem;color:var(--muted);">Limit</span>
+        <input type="number" id="set-ocr-trunc-len" min="1" max="255" value="255" style="width:80px;">
+        <span style="font-size:0.78rem;color:var(--muted);">characters (max 255)</span>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" onclick="saveOcrSettings()">Save OCR Settings</button>
+        <button class="btn btn-secondary btn-sm" onclick="rerunOcr('existing')">🔄 Re-run OCR (existing text)</button>
+        <button class="btn btn-secondary btn-sm" onclick="rerunOcr('all')">🔄 Re-run OCR (all items)</button>
+      </div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:8px;line-height:1.4;">
+        Re-run after changing truncation so stored tags pick up the new limit.
+      </div>
+    </div>
+
+    <!-- Model keep-alive -->
+    <div class="schedule-panel mt-8">
+      <label>Model Keep-Alive</label>
+      <div style="font-size:0.82rem;color:var(--muted);line-height:1.4;margin-bottom:8px;">
+        How long CLIP/OCR stay in memory after a search or tagging job. Loading
+        re-encodes the whole dictionary, so keeping them warm makes repeat
+        searches instant. 0 = unload immediately.
+      </div>
+      <div class="time-row">
+        <input type="number" id="set-keepalive" min="0" max="3600" value="60" style="width:90px;">
+        <span style="font-size:0.8rem;color:var(--muted);">seconds (0–3600)</span>
+        <button class="btn btn-primary btn-sm" onclick="saveKeepalive()">Save</button>
+      </div>
+    </div>
+
+    <!-- Dictionaries -->
+    <div class="schedule-panel mt-8">
+      <label>Dictionaries</label>
+      <div id="dict-summary" style="font-size:0.82rem;color:var(--muted);margin-bottom:8px;">Loading…</div>
+      <div id="dict-list" style="max-height:140px;overflow-y:auto;font-size:0.76rem;margin-bottom:8px;"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" onclick="loadDictionaries()">↻ Refresh</button>
+        <button class="btn btn-secondary btn-sm" onclick="reloadDictionaries()">⟳ Reload from disk</button>
+      </div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:8px;line-height:1.4;">
+        Edit files in the <code>dictionaries/</code> folder. Rename a file to end
+        in <code>.off</code> to disable that category.
+      </div>
+    </div>
+
+    <!-- Vocabulary review -->
+    <div class="schedule-panel mt-8">
+      <label>Vocabulary Review</label>
+      <div style="font-size:0.82rem;color:var(--muted);line-height:1.4;margin-bottom:8px;">
+        Mine words from names you typed and text OCR read, then review which are
+        worth adding to the dictionary.
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openVocabReview()">🔍 Analyze Words</button>
     </div>
 
     <!-- WLED Link -->
@@ -1102,9 +1272,38 @@
           ▬ Solid
         </button>
         <button class="effect-btn" id="effect-pulse" onclick="setEffect('pulse')">
-          ◉ Pulse / Breathe
+          ◉ Pulse
+        </button>
+        <button class="effect-btn" id="effect-chase" onclick="setEffect('chase')">
+          ➤ Chase
         </button>
       </div>
+    </div>
+
+    <!-- Chase config (only shown when Chase effect is selected) -->
+    <div class="wled-section" id="chase-config" style="display:none;">
+      <div class="wled-section-title">Chase Settings</div>
+      <div class="jog-row">
+        <span class="jog-label">Start LED</span>
+        <button class="jog-btn" onclick="chaseAdjust('start', -10)">◀◀</button>
+        <button class="jog-btn" onclick="chaseAdjust('start', -1)">◀</button>
+        <span id="chase-start-val" style="min-width:32px;text-align:center;font-weight:700;">0</span>
+        <button class="jog-btn" onclick="chaseAdjust('start', 1)">▶</button>
+        <button class="jog-btn" onclick="chaseAdjust('start', 10)">▶▶</button>
+      </div>
+      <div class="jog-row">
+        <span class="jog-label">Comet Size</span>
+        <button class="jog-btn" onclick="chaseAdjust('size', -1)">−</button>
+        <span id="chase-size-val" style="min-width:32px;text-align:center;font-weight:700;">3</span>
+        <button class="jog-btn" onclick="chaseAdjust('size', 1)">+</button>
+        <span style="font-size:0.74rem;color:var(--muted);">LEDs</span>
+      </div>
+      <div class="brightness-row" style="margin-top:8px;">
+        <span class="jog-label">Speed</span>
+        <input type="range" id="chase-speed" min="5" max="200" value="50" oninput="chaseSpeedInput()">
+        <span id="chase-speed-val" style="font-size:0.78rem;color:var(--muted);min-width:60px;text-align:right;">50 ms/LED</span>
+      </div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="previewChase()">➤ Preview Chase</button>
     </div>
 
     <!-- Duration -->
@@ -1129,6 +1328,117 @@
   </div>
 </div>
 
+<!-- Shopping List Sheet -->
+<div id="overlay-shopping-list" class="overlay" onclick="closeAllSheets(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      🛒 Shopping List
+      <button class="btn-icon" onclick="closeSheet('overlay-shopping-list')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="shopping-list-items"></div>
+  </div>
+</div>
+
+<!-- Restock Sheet -->
+<div id="overlay-restock" class="overlay" onclick="closeAllSheets(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      Restock <span id="restock-item-label" style="color:var(--accent2)"></span>
+      <button class="btn-icon" onclick="closeSheet('overlay-restock')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <img id="restock-photo" class="item-detail-photo">
+
+    <div class="effect-row mb-12">
+      <button class="effect-btn active" id="restock-mode-same" onclick="setRestockMode('same')">
+        ↩️ Same Bin & Photo
+      </button>
+      <button class="effect-btn" id="restock-mode-update" onclick="setRestockMode('update')">
+        ✏️ Update Details
+      </button>
+    </div>
+
+    <div id="restock-update-fields" style="display:none;">
+      <div class="field"><label>Label</label><input id="restock-label" type="text"></div>
+      <div class="field"><label>Notes</label><textarea id="restock-notes"></textarea></div>
+      <div class="field">
+        <label>Bin</label>
+        <select id="restock-bin-select"></select>
+      </div>
+      <div class="field">
+        <label>Replace Photo (optional — will re-run ML tagging)</label>
+        <label class="btn btn-secondary btn-full" style="cursor:pointer;">
+          📷 Choose New Photo
+          <input type="file" accept="image/*" capture="environment" style="display:none" onchange="handleRestockPhotoUpload(event)">
+        </label>
+        <div id="restock-photo-status" class="text-sm muted mt-8"></div>
+      </div>
+    </div>
+
+    <div id="restock-same-note" class="text-sm muted mb-12">
+      Will return to its original bin <strong id="restock-origin-bin-name"></strong> using the saved photo and tags, and light up the bin if WLED is configured.
+    </div>
+
+    <button class="btn btn-primary btn-full" onclick="confirmRestock()">✓ Restock Item</button>
+  </div>
+</div>
+
+<!-- Vocabulary Review Sheet -->
+<div id="overlay-vocab" class="overlay" onclick="closeAllSheets(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      Vocabulary Review
+      <button class="btn-icon" onclick="closeSheet('overlay-vocab')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="wled-section">
+      <div class="wled-section-title">Source</div>
+      <div class="effect-row">
+        <button class="effect-btn active" id="vocab-src-both"   onclick="setVocabSource('both')">Both</button>
+        <button class="effect-btn"        id="vocab-src-manual" onclick="setVocabSource('manual')">Manual names</button>
+        <button class="effect-btn"        id="vocab-src-ocr"    onclick="setVocabSource('ocr')">OCR text</button>
+      </div>
+    </div>
+
+    <div class="wled-section">
+      <div class="wled-section-title">Minimum uses to pre-select</div>
+      <div class="time-row">
+        <input type="number" id="vocab-min" min="1" max="99" value="2" style="width:80px;">
+        <span style="font-size:0.78rem;color:var(--muted);">occurrences</span>
+        <button class="btn btn-primary btn-sm" onclick="runVocabAnalysis()">Analyze</button>
+      </div>
+    </div>
+
+    <div id="vocab-summary" style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;"></div>
+
+    <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+      <button class="btn btn-secondary btn-sm" onclick="vocabSelectAll(true)">Select all</button>
+      <button class="btn btn-secondary btn-sm" onclick="vocabSelectAll(false)">Clear all</button>
+      <button class="btn btn-secondary btn-sm" onclick="vocabSelectThreshold()">Reset to threshold</button>
+    </div>
+
+    <!-- Word map: every word is a tappable chip; selected chips are highlighted -->
+    <div id="vocab-words" style="display:flex;flex-wrap:wrap;gap:6px;max-height:320px;overflow-y:auto;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;"></div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-primary" style="flex:1" onclick="addVocabWords()">➕ Add to Dictionary</button>
+      <button class="btn btn-secondary" onclick="exportVocabWords()">⬇ Export Wordlist</button>
+    </div>
+    <div style="font-size:0.72rem;color:var(--muted);margin-top:8px;">
+      Added words go to <code>dictionaries/98_reviewed.txt</code> and take effect immediately.
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div id="toast"></div>
 
@@ -1146,7 +1456,9 @@ let invBinFilter = null;   // null = all
 (async () => {
   await loadBins();
   await loadWledGlobal();
+  await loadOcrSettings();
   renderBinsView();
+  updateCartBadge();
   fetch('/api/warmup', {method:'POST'});
   pollClipStatus();
 })();
@@ -1174,10 +1486,23 @@ function pollClipStatus() {
     }
 
     if (busy) {
-      // model is loaded and working
-      badge.textContent = `⚙ Tagging… (${d.queue_size} left)`;
+      // ── Working: show "N of M" plus an ETA when we can estimate one ──────
+      const p = d.progress || {};
+      const done  = p.done  || 0;
+      const total = p.total || 0;
+      let label = '⚙ ';
+      // Name whichever engine(s) are actually loaded right now.
+      if (d.ocr_ready && d.clip_ready)      label += 'Tagging+OCR ';
+      else if (d.ocr_ready)                  label += 'OCR ';
+      else                                   label += 'Tagging ';
+      if (total > 0) label += `${done} of ${total}`;
+      else           label += `(${d.queue_size} left)`;
+      if (p.eta_sec != null && p.eta_sec > 0) label += ` · ~${fmtEta(p.eta_sec)}`;
+
+      badge.textContent = label;
       badge.className   = 'clip-status ready';
-      qbadge.textContent  = `${d.queue_size} left`;
+
+      qbadge.textContent   = total > 0 ? `${Math.round((done/total)*100)}%` : `${d.queue_size} left`;
       qbadge.style.display = 'inline-block';
       runBtn.style.display = 'none';
       autoBtn.textContent  = '⚙ Running…';
@@ -1223,6 +1548,232 @@ function updateAutoTagBtn() {
     if (sbtn){ sbtn.textContent= '⏸ Auto-tag OFF'; sbtn.style.background='#2d1a0a'; sbtn.style.color='#fbbf24'; }
     if (runBtn) runBtn.style.display = 'inline-block';
   }
+}
+
+// Format a seconds count into a compact human string for the banner.
+function fmtEta(sec) {
+  if (sec < 60) return `${sec}s left`;
+  const m = Math.floor(sec / 60), s = sec % 60;
+  if (m < 60) return s ? `${m}m ${s}s left` : `${m}m left`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${m % 60}m left`;
+}
+
+// ── OCR: per-item toggle on the Add Item screen ─────────────────────────────
+let _itemOcrOn   = false;   // state of the toggle for the item being added
+let _ocrSettings = { ocr_default_on:false, ocr_as_tags:true, ocr_truncate:true, ocr_truncate_len:255 };
+
+function updateItemOcrBtn() {
+  const b = document.getElementById('item-ocr-toggle');
+  if (!b) return;
+  if (_itemOcrOn) {
+    b.textContent = '🟢 ON';
+    b.style.background = '#0d2d20'; b.style.color = '#34d399';
+  } else {
+    b.textContent = '⚫ OFF';
+    b.style.background = 'var(--border)'; b.style.color = 'var(--muted)';
+  }
+}
+
+function toggleItemOcr() {
+  _itemOcrOn = !_itemOcrOn;
+  updateItemOcrBtn();
+}
+
+// ── OCR: settings sheet ─────────────────────────────────────────────────────
+async function loadOcrSettings() {
+  try {
+    _ocrSettings = await api('/api/settings/ocr');
+    renderOcrSettings();
+  } catch(e) {}
+}
+
+function styleToggle(id, on) {
+  const b = document.getElementById(id);
+  if (!b) return;
+  b.textContent = on ? '🟢 ON' : '⚫ OFF';
+  b.style.background = on ? '#0d2d20' : 'var(--border)';
+  b.style.color      = on ? '#34d399' : 'var(--muted)';
+}
+
+function renderOcrSettings() {
+  styleToggle('set-ocr-default', _ocrSettings.ocr_default_on);
+  styleToggle('set-ocr-tags',    _ocrSettings.ocr_as_tags);
+  styleToggle('set-ocr-trunc',   _ocrSettings.ocr_truncate);
+  const lenEl = document.getElementById('set-ocr-trunc-len');
+  if (lenEl) lenEl.value = _ocrSettings.ocr_truncate_len;
+  // The length field is only meaningful when truncation is enabled.
+  const row = document.getElementById('ocr-trunc-len-row');
+  if (row) row.style.opacity = _ocrSettings.ocr_truncate ? '1' : '0.4';
+}
+
+function toggleOcrSetting(key) {
+  _ocrSettings[key] = !_ocrSettings[key];
+  renderOcrSettings();
+}
+
+async function saveOcrSettings() {
+  const len = parseInt(document.getElementById('set-ocr-trunc-len').value) || 255;
+  try {
+    _ocrSettings = await api('/api/settings/ocr', {method:'POST', body: JSON.stringify({
+      ocr_default_on:   _ocrSettings.ocr_default_on,
+      ocr_as_tags:      _ocrSettings.ocr_as_tags,
+      ocr_truncate:     _ocrSettings.ocr_truncate,
+      ocr_truncate_len: Math.max(1, Math.min(255, len)),
+    })});
+    renderOcrSettings();
+    toast('OCR settings saved');
+  } catch(e) { toast(e.message, true); }
+}
+
+async function rerunOcr(scope) {
+  const msg = scope === 'all'
+    ? 'Re-run OCR on EVERY item? This can take a while.'
+    : 'Re-run OCR on items that already have text?';
+  if (!confirm(msg)) return;
+  try {
+    const r = await api('/api/settings/rerun-ocr', {method:'POST', body: JSON.stringify({scope})});
+    toast(`${r.queued} item${r.queued!==1?'s':''} queued for OCR`);
+    pollClipStatus();
+  } catch(e) { toast(e.message, true); }
+}
+
+// ── Keep-alive setting ──────────────────────────────────────────────────────
+async function saveKeepalive() {
+  const v = parseInt(document.getElementById('set-keepalive').value);
+  if (isNaN(v) || v < 0 || v > 3600) { toast('Enter 0–3600 seconds', true); return; }
+  try {
+    await api('/api/settings/ocr', {method:'POST', body: JSON.stringify({model_keepalive_sec: v})});
+    toast(v === 0 ? 'Models will unload immediately' : `Models stay warm for ${v}s`);
+  } catch(e) { toast(e.message, true); }
+}
+
+// ── Dictionaries ────────────────────────────────────────────────────────────
+async function loadDictionaries() {
+  const sum = document.getElementById('dict-summary');
+  const list = document.getElementById('dict-list');
+  if (!sum) return;
+  sum.textContent = 'Loading…';
+  try {
+    const d = await api('/api/dictionaries');
+    const on = d.files.filter(f => f.enabled).length;
+    sum.textContent = `${d.total} terms from ${on} enabled file${on!==1?'s':''} · ${d.active} active (incl. learned)`;
+    list.innerHTML = d.files.map(f => `
+      <div style="display:flex;justify-content:space-between;padding:3px 0;${f.enabled?'':'opacity:.45'}">
+        <span>${f.enabled ? '✓' : '✗'} ${esc(f.file)}</span>
+        <span style="color:var(--muted)">${f.terms}</span>
+      </div>`).join('');
+    document.getElementById('set-keepalive').value = _ocrSettings.model_keepalive_sec ?? 60;
+  } catch(e) { sum.textContent = 'Could not load dictionaries'; }
+}
+
+async function reloadDictionaries() {
+  try {
+    const r = await api('/api/dictionaries/reload', {method:'POST', body:'{}'});
+    toast(`Reloaded — ${r.active} active terms`);
+    loadDictionaries();
+  } catch(e) { toast(e.message, true); }
+}
+
+// ── Vocabulary review ───────────────────────────────────────────────────────
+let _vocabSource = 'both';
+let _vocabWords  = [];   // [{word,count,items,known,selected}]
+
+function setVocabSource(s) {
+  _vocabSource = s;
+  ['both','manual','ocr'].forEach(k =>
+    document.getElementById('vocab-src-'+k).classList.toggle('active', k === s));
+}
+
+function openVocabReview() {
+  closeSheet('overlay-ml-settings');
+  openSheet('overlay-vocab');
+  runVocabAnalysis();
+}
+
+async function runVocabAnalysis() {
+  const min = parseInt(document.getElementById('vocab-min').value) || 2;
+  const sum = document.getElementById('vocab-summary');
+  sum.textContent = 'Analyzing…';
+  try {
+    const r = await api(`/api/vocab/analyze?source=${_vocabSource}&min=${min}`);
+    _vocabWords = r.words;
+    sum.textContent = `${r.unique} unique words from ${r.scanned} items · ${r.preselected} pre-selected (used ≥${r.min}×)`;
+    renderVocabWords();
+  } catch(e) { sum.textContent = 'Analysis failed: ' + e.message; }
+}
+
+function renderVocabWords() {
+  const box = document.getElementById('vocab-words');
+  if (!_vocabWords.length) {
+    box.innerHTML = '<div class="muted text-sm">No words found. Add some items with typed names or OCR text first.</div>';
+    return;
+  }
+  // Chips are sorted most-frequent first. Already-known words are dimmed and
+  // can't be selected — adding them again would be a no-op.
+  box.innerHTML = _vocabWords.map((w, i) => {
+    if (w.known) {
+      return `<span style="font-size:0.74rem;padding:4px 9px;border-radius:6px;background:var(--border);color:var(--muted);opacity:.6;"
+        title="Already in dictionary">${esc(w.word)} · ${w.count}</span>`;
+    }
+    const sel = w.selected;
+    return `<span onclick="toggleVocabWord(${i})" style="cursor:pointer;font-size:0.74rem;padding:4px 9px;border-radius:6px;
+      background:${sel ? 'var(--accent)' : 'var(--card)'};color:${sel ? '#fff' : 'var(--text)'};
+      border:1px solid ${sel ? 'var(--accent)' : 'var(--border)'};"
+      title="${w.items} item(s)">${sel ? '✓ ' : ''}${esc(w.word)} · ${w.count}</span>`;
+  }).join('');
+}
+
+function toggleVocabWord(i) {
+  if (_vocabWords[i].known) return;
+  _vocabWords[i].selected = !_vocabWords[i].selected;
+  renderVocabWords();
+}
+
+function vocabSelectAll(on) {
+  _vocabWords.forEach(w => { if (!w.known) w.selected = on; });
+  renderVocabWords();
+}
+
+function vocabSelectThreshold() {
+  const min = parseInt(document.getElementById('vocab-min').value) || 2;
+  _vocabWords.forEach(w => { w.selected = !w.known && w.count >= min; });
+  renderVocabWords();
+}
+
+function selectedVocab() {
+  return _vocabWords.filter(w => w.selected && !w.known).map(w => w.word);
+}
+
+async function addVocabWords() {
+  const words = selectedVocab();
+  if (!words.length) { toast('No words selected', true); return; }
+  if (!confirm(`Add ${words.length} word(s) to the dictionary?`)) return;
+  try {
+    const r = await api('/api/vocab/add-words', {method:'POST', body: JSON.stringify({words})});
+    toast(`Added ${r.added} word(s) — ${r.active} active terms`);
+    runVocabAnalysis();   // refresh so added words now show as "known"
+  } catch(e) { toast(e.message, true); }
+}
+
+async function exportVocabWords() {
+  const words = selectedVocab();
+  if (!words.length) { toast('No words selected', true); return; }
+  try {
+    // Fetch as a blob and trigger a browser download.
+    const res = await fetch('/api/vocab/export', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({words})
+    });
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'binventory_wordlist.txt';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    toast(`Exported ${words.length} word(s)`);
+  } catch(e) { toast(e.message, true); }
 }
 
 function updateSettingsSheet(d) {
@@ -1374,12 +1925,14 @@ function renderBinsView() {
   bins.forEach(b => {
     const card = document.createElement('div');
     card.className = 'bin-card';
+    if (b.is_virtual) card.style.borderColor = '#fbbf24';
     card.onclick = () => openBin(b.id);
+    const icon = b.is_virtual ? '📤 ' : '';
     card.innerHTML = `
       <div class="bin-dot" style="background:${b.color}"></div>
-      <div class="bin-name">${esc(b.name)}</div>
+      <div class="bin-name">${icon}${esc(b.name)}</div>
       ${b.location ? `<div class="bin-meta">${esc(b.location)}</div>` : ''}
-      <div class="bin-count">${b.item_count} item${b.item_count!==1?'s':''}</div>
+      <div class="bin-count" style="${b.is_virtual ? 'background:#3d2f0a;color:#fbbf24;' : ''}">${b.item_count} item${b.item_count!==1?'s':''}</div>
     `;
     grid.appendChild(card);
   });
@@ -1416,22 +1969,35 @@ function openBin(binId) {
   const bin = bins.find(b => b.id === binId);
   if (!bin) return;
   document.getElementById('bin-detail-name').textContent     = bin.name;
-  document.getElementById('bin-detail-location').textContent = bin.location || '';
+  document.getElementById('bin-detail-location').textContent = bin.is_virtual ? 'Items currently checked out' : (bin.location || '');
   document.getElementById('bin-detail-dot').style.background = bin.color;
 
-  // WLED buttons — show if global WLED is enabled
-  const findBtn = document.getElementById('bin-find-btn');
-  const wledBtn = document.getElementById('bin-wled-btn');
-  if (_wledGlobalEnabled) {
-    if (wledBtn) wledBtn.style.display = 'inline-flex';
-    if (findBtn) {
-      findBtn.style.display = bin.wled_enabled ? 'inline-flex' : 'none';
-      findBtn.textContent   = '💡 Find';
-      findBtn.classList.remove('firing');
-    }
-  } else {
-    if (wledBtn) wledBtn.style.display = 'none';
+  const findBtn   = document.getElementById('bin-find-btn');
+  const wledBtn    = document.getElementById('bin-wled-btn');
+  const addItemBtn = document.getElementById('bin-add-item-btn');
+  const editBtn    = document.getElementById('bin-edit-btn');
+
+  if (bin.is_virtual) {
+    // Checked Out pseudo-bin — hide editing/WLED/add-item controls
     if (findBtn) findBtn.style.display = 'none';
+    if (wledBtn) wledBtn.style.display = 'none';
+    if (addItemBtn) addItemBtn.style.display = 'none';
+    if (editBtn) editBtn.style.display = 'none';
+  } else {
+    if (addItemBtn) addItemBtn.style.display = 'inline-flex';
+    if (editBtn) editBtn.style.display = 'inline-flex';
+    // WLED buttons — show if global WLED is enabled
+    if (_wledGlobalEnabled) {
+      if (wledBtn) wledBtn.style.display = 'inline-flex';
+      if (findBtn) {
+        findBtn.style.display = bin.wled_enabled ? 'inline-flex' : 'none';
+        findBtn.textContent   = '💡 Find';
+        findBtn.classList.remove('firing');
+      }
+    } else {
+      if (wledBtn) wledBtn.style.display = 'none';
+      if (findBtn) findBtn.style.display = 'none';
+    }
   }
 
   showView('bin-detail');
@@ -1469,16 +2035,53 @@ async function saveBinEdit() {
   } catch(e) { toast(e.message, true); }
 }
 
-async function confirmDeleteBin() {
+let _deleteMode = 'checkout';
+
+function openDeleteBinSheet() {
   const bin = bins.find(b => b.id === currentBinId);
-  if (!confirm(`Delete bin "${bin?.name}" and ALL its items? This cannot be undone.`)) return;
+  if (!bin) return;
+  document.getElementById('delete-bin-name').textContent  = bin.name;
+  document.getElementById('delete-bin-count').textContent = `${bin.item_count} item${bin.item_count!==1?'s':''}`;
+  document.getElementById('delete-confirm-input').value   = '';
+  setDeleteMode('checkout');
+  checkDeleteConfirm();
+  closeSheet('overlay-edit-bin');
+  openSheet('overlay-delete-bin');
+}
+
+function setDeleteMode(mode) {
+  _deleteMode = mode;
+  document.getElementById('del-mode-checkout').classList.toggle('active', mode === 'checkout');
+  document.getElementById('del-mode-delete').classList.toggle('active', mode === 'delete');
+  checkDeleteConfirm();
+}
+
+function checkDeleteConfirm() {
+  const val = document.getElementById('delete-confirm-input').value.trim().toLowerCase();
+  const btn = document.getElementById('delete-bin-confirm-btn');
+  const ok  = val === 'delete';
+  btn.disabled = !ok;
+  btn.style.opacity = ok ? '1' : '0.5';
+  btn.textContent = _deleteMode === 'delete' ? 'Delete Bin & All Contents' : 'Remove Bin & Check Out Items';
+}
+
+async function executeDeleteBin() {
+  const confirmText = document.getElementById('delete-confirm-input').value.trim();
   try {
-    await api(`/api/bins/${currentBinId}`, {method:'DELETE'});
-    closeSheet('overlay-edit-bin');
+    const r = await api(`/api/bins/${currentBinId}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ confirm: confirmText, contents: _deleteMode })
+    });
+    closeSheet('overlay-delete-bin');
     await loadBins();
     showView('bins');
     renderBinsView();
-    toast('Bin deleted');
+    updateCartBadge();
+    if (_deleteMode === 'checkout') {
+      toast(`Bin removed — ${r.checked_out} item${r.checked_out!==1?'s':''} checked out`);
+    } else {
+      toast(`Bin and ${r.deleted_items} item${r.deleted_items!==1?'s':''} deleted`);
+    }
   } catch(e) { toast(e.message, true); }
 }
 
@@ -1490,6 +2093,9 @@ function openAddItemSheet() {
   document.getElementById('item-notes').value = '';
   document.getElementById('btn-save-item').disabled = true;
   capturedBlob = null;
+  // Seed the per-item OCR toggle from the user's configured default.
+  _itemOcrOn = !!_ocrSettings.ocr_default_on;
+  updateItemOcrBtn();
   resetCameraUI();
   openSheet('overlay-add-item');
 }
@@ -1533,10 +2139,37 @@ function handleFileUpload(e) {
   e.target.value = '';
 }
 
+// Rotate the not-yet-uploaded photo. We redraw it through a canvas so the
+// bytes we upload are already upright — the server then never has to guess.
+async function rotateStaged(deg) {
+  if (!capturedBlob) return;
+  const img = new Image();
+  const url = URL.createObjectURL(capturedBlob);
+  await new Promise(res => { img.onload = res; img.src = url; });
+
+  const cv = document.createElement('canvas');
+  const swap = Math.abs(deg) === 90;
+  cv.width  = swap ? img.height : img.width;
+  cv.height = swap ? img.width  : img.height;
+
+  const ctx = cv.getContext('2d');
+  ctx.translate(cv.width / 2, cv.height / 2);
+  ctx.rotate(deg * Math.PI / 180);
+  ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+  cv.toBlob(b => {
+    capturedBlob = b;
+    URL.revokeObjectURL(url);
+    showPreview(URL.createObjectURL(b));
+  }, 'image/jpeg', 0.9);
+}
+
 function showPreview(url) {
   const prev = document.getElementById('photo-preview');
   prev.src = url;
   prev.style.display = 'block';
+  const rc = document.getElementById('rotate-controls');
+  if (rc) rc.style.display = 'flex';
   document.getElementById('camera-video').style.display = 'none';
   document.getElementById('camera-placeholder').style.display = 'none';
   document.getElementById('btn-save-item').disabled = false;
@@ -1556,6 +2189,8 @@ function stopCamera() {
 
 function resetCameraUI() {
   stopCamera();
+  const rc = document.getElementById('rotate-controls');
+  if (rc) rc.style.display = 'none';
   document.getElementById('photo-preview').style.display = 'none';
   document.getElementById('camera-placeholder').style.display = 'flex';
   document.getElementById('camera-placeholder').style.alignItems = 'center';
@@ -1574,6 +2209,7 @@ async function saveItem() {
   fd.append('photo', capturedBlob, 'photo.jpg');
   fd.append('label', document.getElementById('item-label').value.trim());
   fd.append('notes', document.getElementById('item-notes').value.trim());
+  fd.append('run_ocr', _itemOcrOn ? 'true' : 'false');
 
   try {
     const item = await fetch('/api/items', {method:'POST', body: fd}).then(r=>r.json());
@@ -1602,8 +2238,19 @@ async function loadInventoryView() {
   const chips = document.getElementById('inv-bin-chips');
   grid.innerHTML = '<div class="muted text-sm">Loading…</div>';
 
-  const url = invBinFilter ? `/api/items?bin_id=${invBinFilter}` : '/api/items';
-  const items = await api(url);
+  let items;
+  if (invBinFilter === 'checked_out') {
+    items = await api('/api/items?bin_id=checked_out');
+  } else if (invBinFilter) {
+    items = await api(`/api/items?bin_id=${invBinFilter}`);
+  } else {
+    // Default "All" view — active items with checked-out items pinned to the front
+    const [active, checkedOut] = await Promise.all([
+      api('/api/items'),
+      api('/api/items?bin_id=checked_out'),
+    ]);
+    items = [...checkedOut, ...active];
+  }
 
   // render bin filter chips
   chips.innerHTML = '';
@@ -1613,17 +2260,25 @@ async function loadInventoryView() {
   allChip.onclick = () => { invBinFilter = null; loadInventoryView(); };
   chips.appendChild(allChip);
 
-  bins.forEach(b => {
+  const checkedOutBin = bins.find(b => b.is_virtual);
+  if (checkedOutBin) {
+    const c = document.createElement('div');
+    c.className = 'chip' + (invBinFilter === 'checked_out' ? ' active' : '');
+    c.style.borderColor = '#fbbf24';
+    c.innerHTML = `📤 Checked Out (${checkedOutBin.item_count})`;
+    c.onclick = () => { invBinFilter = 'checked_out'; loadInventoryView(); };
+    chips.appendChild(c);
+  }
+
+  bins.filter(b => !b.is_virtual).forEach(b => {
     const c = document.createElement('div');
     c.className = 'chip' + (invBinFilter === b.id ? ' active' : '');
-    const cnt = items.filter(i => i.bin_id === b.id).length;
-    c.innerHTML = `<span class="bin-pip" style="background:${b.color}"></span> ${esc(b.name)} (${cnt})`;
+    c.innerHTML = `<span class="bin-pip" style="background:${b.color}"></span> ${esc(b.name)} (${b.item_count})`;
     c.onclick = () => { invBinFilter = b.id; loadInventoryView(); };
     chips.appendChild(c);
   });
 
-  const shown = invBinFilter ? items.filter(i => i.bin_id === invBinFilter) : items;
-  renderItemGrid(grid, shown);
+  renderItemGrid(grid, items);
 }
 
 // ── SEARCH ────────────────────────────────────────────────────────────────────
@@ -1632,24 +2287,48 @@ function scheduleSearch() {
   searchTimer = setTimeout(doSearch, 350);
 }
 
-async function doSearch() {
+async function doSearch(smart=false) {
   const q = document.getElementById('search-input').value.trim();
   const status = document.getElementById('search-status');
   const results = document.getElementById('search-results');
   if (!q) { results.innerHTML = ''; status.textContent = ''; return; }
-  status.textContent = 'Searching…';
+
+  status.textContent = smart ? 'Loading ML model — first run can take ~20s…' : 'Searching…';
   try {
-    const items = await api(`/api/search?q=${encodeURIComponent(q)}`);
+    const url = `/api/search?q=${encodeURIComponent(q)}${smart ? '&smart=1' : ''}`;
+    const data = await api(url);
+    // Response is {mode, results}: "semantic" used the ML model, "keyword"
+    // fell back to plain text matching because the model wasn't loaded.
+    const items = data.results || [];
+    const mode  = data.mode || 'keyword';
+
     if (!items.length) {
-      results.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div>No results for "${esc(q)}"</div>`;
+      const hint = (mode === 'keyword')
+        ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div>
+             No keyword matches for "${esc(q)}".<br>
+             <span style="font-size:0.82rem;">Tap ✨ for smart search — it matches by meaning, not just words.</span>
+           </div>`
+        : `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div>No results for "${esc(q)}"</div>`;
+      results.innerHTML = hint;
       status.textContent = '';
     } else {
-      status.textContent = `${items.length} result${items.length!==1?'s':''}`;
-      renderItemGrid(results, items, true);
+      const badge = mode === 'semantic' ? '✨ smart' : '🔤 keyword';
+      status.innerHTML = `${items.length} result${items.length!==1?'s':''} · <span style="color:var(--accent2)">${badge}</span>`
+        + (mode === 'keyword' ? ' <span style="color:var(--muted)">— tap ✨ to match by meaning</span>' : '');
+      renderItemGrid(results, items, mode === 'semantic');
     }
+    pollClipStatus();
   } catch(e) {
     status.textContent = 'Search error';
   }
+}
+
+// Explicit "load the model and search semantically" action (the ✨ button).
+async function doSmartSearch() {
+  const btn = document.getElementById('smart-search-btn');
+  btn.disabled = true; btn.textContent = '⏳';
+  await doSearch(true);
+  btn.disabled = false; btn.textContent = '✨';
 }
 
 // ── ITEM GRID RENDERER ────────────────────────────────────────────────────────
@@ -1671,13 +2350,22 @@ function renderItemGrid(container, items, showScore=false) {
       <div class="score-bar"><div class="score-fill" style="width:${Math.round(item.score*100*2)}%"></div></div>
     ` : '';
 
+    const checkedOutBadge = item.status === 'checked_out' ? `
+      <div style="position:absolute;top:6px;right:6px;background:#3d2f0a;color:#fbbf24;font-size:0.62rem;font-weight:700;padding:2px 6px;border-radius:6px;">📤 OUT</div>
+    ` : '';
+    if (checkedOutBadge) card.style.position = 'relative';
+
+    const binLine = item.status === 'checked_out'
+      ? `<span class="bin-pip" style="background:#fbbf24"></span> from ${esc(item.origin_bin_name || '?')}`
+      : `<span class="bin-pip" style="background:${item.bin_color}"></span> ${esc(item.bin_name)}`;
+
     card.innerHTML = `
+      ${checkedOutBadge}
       <img src="${item.photo_url}" alt="${esc(item.label)}" loading="lazy">
       <div class="item-card-body">
         <div class="item-card-label">${esc(item.label || 'Unlabeled')}</div>
         <div class="item-card-bin">
-          <span class="bin-pip" style="background:${item.bin_color}"></span>
-          ${esc(item.bin_name)}
+          ${binLine}
         </div>
         ${scoreHtml}
       </div>
@@ -1687,8 +2375,12 @@ function renderItemGrid(container, items, showScore=false) {
 }
 
 // ── ITEM DETAIL ───────────────────────────────────────────────────────────────
+let currentItemStatus = 'active';
+
 async function openItemDetail(item) {
-  currentItemId = item.id;
+  currentItemId     = item.id;
+  currentItemStatus = item.status || 'active';
+
   document.getElementById('detail-photo').src   = item.photo_url;
   document.getElementById('detail-label').value = item.label;
   document.getElementById('detail-notes').value = item.notes;
@@ -1704,27 +2396,124 @@ async function openItemDetail(item) {
     });
   }
 
-  // retag button
-  document.getElementById('detail-retag-row').style.display = 'block';
+  // retag + OCR buttons
+  document.getElementById('detail-retag-row').style.display = (currentItemStatus === 'active') ? 'block' : 'none';
 
-  // WLED find button
-  const findRow = document.getElementById('item-find-row');
-  if (findRow) {
-    const haswled = _wledGlobalEnabled && item.bin_wled;
-    findRow.style.display = haswled ? 'block' : 'none';
+  // Show what produced this item's name, and any OCR text we read.
+  const srcEl = document.getElementById('detail-label-source');
+  if (srcEl) {
+    const map = { ml:'🤖 ML-generated', user:'✏️ User-entered', ocr:'🔤 Read from image',
+                  scanned:'📷 Scanned', scanned_search:'📷 Scanned + looked up' };
+    srcEl.textContent = map[item.label_source] || '';
+    srcEl.style.display = srcEl.textContent ? 'block' : 'none';
+  }
+  const ocrEl = document.getElementById('detail-ocr-text');
+  if (ocrEl) {
+    if (item.ocr_text) {
+      ocrEl.textContent = '🔤 OCR read: ' + item.ocr_text;
+      ocrEl.style.display = 'block';
+    } else {
+      ocrEl.style.display = 'none';
+    }
   }
 
-  // bin select
+  // status banner
+  const banner = document.getElementById('detail-status-banner');
+  if (currentItemStatus === 'checked_out') {
+    banner.style.display = 'block';
+    banner.style.background = '#3d2f0a';
+    banner.style.color = '#fbbf24';
+    banner.textContent = `📤 Checked out from ${item.origin_bin_name || 'unknown bin'}`;
+  } else {
+    banner.style.display = 'none';
+  }
+
+  // WLED find button — resolves correctly for active or checked-out items
+  const findRow = document.getElementById('item-find-row');
+  if (findRow) {
+    const wledOn = _wledGlobalEnabled && (currentItemStatus === 'checked_out' ? item.origin_bin_wled : item.bin_wled);
+    findRow.style.display = wledOn ? 'block' : 'none';
+  }
+
+  // bin select / field — hidden for checked-out items (they don't live in a bin right now)
+  const binField = document.getElementById('detail-bin-field');
   const sel = document.getElementById('detail-bin-select');
-  sel.innerHTML = '';
-  bins.forEach(b => {
-    const opt = document.createElement('option');
-    opt.value = b.id; opt.textContent = b.name;
-    if (b.id === item.bin_id) opt.selected = true;
-    sel.appendChild(opt);
-  });
+  if (currentItemStatus === 'checked_out') {
+    binField.style.display = 'none';
+  } else {
+    binField.style.display = 'block';
+    sel.innerHTML = '';
+    bins.filter(b => !b.is_virtual).forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b.id; opt.textContent = b.name;
+      if (b.id === item.bin_id) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  // checkout / return button
+  const checkoutRow = document.getElementById('checkout-row');
+  const checkoutBtn = document.getElementById('checkout-btn');
+  if (currentItemStatus === 'consumed') {
+    checkoutRow.style.display = 'none';
+  } else {
+    checkoutRow.style.display = 'block';
+    if (currentItemStatus === 'checked_out') {
+      checkoutBtn.textContent = '↩️ Return to Bin';
+      checkoutBtn.style.color = 'var(--success)';
+    } else {
+      checkoutBtn.textContent = '📤 Check Out Item';
+      checkoutBtn.style.color = 'var(--text)';
+    }
+  }
+
+  // consume row — hidden once already consumed
+  document.getElementById('consume-row').style.display = (currentItemStatus === 'consumed') ? 'none' : 'block';
+
+  // save/delete — consumed items are managed from the shopping list instead
+  const saveBtn = document.getElementById('detail-save-btn');
+  const delBtn  = document.getElementById('detail-delete-btn');
+  if (currentItemStatus === 'consumed') {
+    saveBtn.style.display = 'none';
+    delBtn.style.display  = 'none';
+  } else {
+    saveBtn.style.display = 'inline-flex';
+    delBtn.style.display  = 'inline-flex';
+  }
 
   openSheet('overlay-item-detail');
+}
+
+async function toggleCheckout() {
+  try {
+    if (currentItemStatus === 'checked_out') {
+      const updated = await api(`/api/items/${currentItemId}/return`, {method:'POST'});
+      toast(`Returned to ${updated.bin_name}`);
+    } else {
+      await api(`/api/items/${currentItemId}/checkout`, {method:'POST'});
+      toast('Item checked out');
+    }
+    closeSheet('overlay-item-detail');
+    await refreshAllViews();
+  } catch(e) { toast(e.message, true); }
+}
+
+async function consumeItem() {
+  if (!confirm('Mark this item as consumed? It will move to your shopping list.')) return;
+  try {
+    await api(`/api/items/${currentItemId}/consume`, {method:'POST'});
+    closeSheet('overlay-item-detail');
+    toast('Moved to shopping list 🛒');
+    await refreshAllViews();
+  } catch(e) { toast(e.message, true); }
+}
+
+async function refreshAllViews() {
+  await loadBins();
+  renderBinsView();
+  updateCartBadge();
+  if (document.getElementById('view-bin-detail').classList.contains('active')) loadBinItems();
+  if (document.getElementById('view-inventory').classList.contains('active')) loadInventoryView();
 }
 
 async function saveItemDetail() {
@@ -1738,11 +2527,7 @@ async function saveItemDetail() {
       })
     });
     closeSheet('overlay-item-detail');
-    await loadBins();
-    renderBinsView();
-    // refresh whichever view is active
-    if (document.getElementById('view-bin-detail').classList.contains('active')) loadBinItems();
-    if (document.getElementById('view-inventory').classList.contains('active')) loadInventoryView();
+    await refreshAllViews();
     toast('Item updated');
   } catch(e) { toast(e.message, true); }
 }
@@ -1752,10 +2537,7 @@ async function deleteItem() {
   try {
     await api(`/api/items/${currentItemId}`, {method:'DELETE'});
     closeSheet('overlay-item-detail');
-    await loadBins();
-    renderBinsView();
-    if (document.getElementById('view-bin-detail').classList.contains('active')) loadBinItems();
-    if (document.getElementById('view-inventory').classList.contains('active')) loadInventoryView();
+    await refreshAllViews();
     toast('Item deleted');
   } catch(e) { toast(e.message, true); }
 }
@@ -1847,7 +2629,7 @@ let _wledTotalLeds     = 30;   // updated after ping
 let _wledPreviewTimer  = null;
 
 // strip state (in the setup sheet)
-let _wS = { start: 0, len: 5, color: '#ffffff', brightness: 128, effect: 'solid' };
+let _wS = { start: 0, len: 5, color: '#ffffff', brightness: 128, effect: 'solid', chaseStart: 0, chaseSize: 3, chaseSpeed: 50 };
 
 async function loadWledGlobal() {
   try {
@@ -1929,6 +2711,9 @@ async function openWledSheet(binId) {
     color:      bin.wled_color      || '#ffffff',
     brightness: bin.wled_brightness ?? 128,
     effect:     bin.wled_effect     || 'solid',
+    chaseStart: bin.wled_chase_start ?? 0,
+    chaseSize:  bin.wled_chase_size  ?? 3,
+    chaseSpeed: bin.wled_chase_speed ?? 50,
   };
 
   document.getElementById('wled-bin-color').value      = _wS.color;
@@ -1981,7 +2766,50 @@ function setEffect(eff, preview=true) {
   _wS.effect = eff;
   document.getElementById('effect-solid').classList.toggle('active', eff === 'solid');
   document.getElementById('effect-pulse').classList.toggle('active', eff === 'pulse');
-  if (preview) sendPreview();
+  document.getElementById('effect-chase').classList.toggle('active', eff === 'chase');
+  // Show the chase configuration panel only for the chase effect.
+  document.getElementById('chase-config').style.display = (eff === 'chase') ? 'block' : 'none';
+  if (eff === 'chase') refreshChaseLabels();
+  // Chase is animated on demand (via Preview button), so we don't auto-preview it
+  // on every toggle the way we do for solid/pulse.
+  if (preview && eff !== 'chase') sendPreview();
+}
+
+// ── CHASE CONFIG CONTROLS ───────────────────────────────────────────────────
+function refreshChaseLabels() {
+  document.getElementById('chase-start-val').textContent = _wS.chaseStart;
+  document.getElementById('chase-size-val').textContent  = _wS.chaseSize;
+  document.getElementById('chase-speed').value           = _wS.chaseSpeed;
+  document.getElementById('chase-speed-val').textContent = `${_wS.chaseSpeed} ms/LED`;
+}
+
+function chaseAdjust(field, delta) {
+  if (field === 'start') _wS.chaseStart = Math.max(0, _wS.chaseStart + delta);
+  if (field === 'size')  _wS.chaseSize  = Math.max(1, _wS.chaseSize + delta);
+  refreshChaseLabels();
+}
+
+function chaseSpeedInput() {
+  _wS.chaseSpeed = parseInt(document.getElementById('chase-speed').value);
+  document.getElementById('chase-speed-val').textContent = `${_wS.chaseSpeed} ms/LED`;
+}
+
+async function previewChase() {
+  const ip = document.getElementById('wled-bin-ip')?.value.trim();
+  if (!ip) { toast('Enter the WLED IP first', true); return; }
+  try {
+    await api('/api/wled/preview', {method:'POST', body: JSON.stringify({
+      ip,
+      seg_start:   _wS.start,
+      seg_len:     _wS.len,
+      color:       _wS.color,
+      brightness:  _wS.brightness,
+      effect:      'chase',
+      chase_start: _wS.chaseStart,
+      chase_size:  _wS.chaseSize,
+      chase_speed: _wS.chaseSpeed,
+    })});
+  } catch(e) { toast('Preview failed: ' + e.message, true); }
 }
 
 function updateBrightnessLabel() {
@@ -2032,14 +2860,17 @@ async function saveWledBin() {
   if (!ip) { toast('Enter the WLED device IP', true); return; }
   try {
     await api(`/api/bins/${_wledCurrentBinId}`, {method:'PUT', body: JSON.stringify({
-      wled_enabled:    enabled,
-      wled_ip:         ip,
-      wled_seg_start:  _wS.start,
-      wled_seg_len:    _wS.len,
-      wled_color:      _wS.color,
-      wled_brightness: _wS.brightness,
-      wled_effect:     _wS.effect,
-      wled_duration:   duration,
+      wled_enabled:     enabled,
+      wled_ip:          ip,
+      wled_seg_start:   _wS.start,
+      wled_seg_len:     _wS.len,
+      wled_color:       _wS.color,
+      wled_brightness:  _wS.brightness,
+      wled_effect:      _wS.effect,
+      wled_duration:    duration,
+      wled_chase_start: _wS.chaseStart,
+      wled_chase_size:  _wS.chaseSize,
+      wled_chase_speed: _wS.chaseSpeed,
     })});
     await loadBins();
     closeSheet('overlay-wled-bin');
@@ -2074,16 +2905,13 @@ async function findBin(binId) {
 }
 
 async function findBinFromItem() {
-  // find the bin for the currently open item
-  const sel   = document.getElementById('detail-bin-select');
-  const binId = sel ? sel.value : null;
-  if (!binId) { toast('No bin selected', true); return; }
+  if (!currentItemId) { toast('No item selected', true); return; }
   const btn = event.target;
   btn.classList.add('firing');
   btn.textContent = '💡 Lit!';
   clearTimeout(_findOffTimer);
   try {
-    const r = await api(`/api/wled/find/${binId}`, {method:'POST', body:'{}'});
+    const r = await api(`/api/wled/find-item/${currentItemId}`, {method:'POST', body:'{}'});
     if (r.duration > 0) {
       _findOffTimer = setTimeout(async () => {
         try { await api('/api/wled/off', {method:'POST', body: JSON.stringify({ip: r.ip})}); } catch(e) {}
@@ -2098,6 +2926,163 @@ async function findBinFromItem() {
     btn.classList.remove('firing');
     btn.textContent = "💡 Find This Item's Bin";
   }
+}
+
+async function rotateSavedItem() {
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = '⏳ Rotating…';
+  try {
+    const r = await api(`/api/items/${currentItemId}/rotate`, {method:'POST', body: JSON.stringify({degrees:90})});
+    // Cache-bust so the browser shows the newly rotated file, not the old one.
+    document.getElementById('detail-photo').src = r.photo_url + '?t=' + Date.now();
+    toast('Rotated — re-processing image');
+    pollClipStatus();
+  } catch(e) { toast(e.message, true); }
+  btn.disabled = false; btn.textContent = '↻ Rotate';
+}
+
+async function runItemOcr() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '⏳ Queuing…';
+  try {
+    await api(`/api/items/${currentItemId}/run-ocr`, {method:'POST'});
+    toast('Queued for OCR — text will appear shortly');
+    pollClipStatus();
+  } catch(e) { toast(e.message, true); }
+  btn.disabled = false;
+  btn.textContent = '🔤 Run OCR';
+}
+
+// ── SHOPPING LIST ─────────────────────────────────────────────────────────────
+let _restockItem = null;
+let _restockMode = 'same';
+let _restockNewPhotoFile = null;
+
+async function updateCartBadge() {
+  try {
+    const items = await api('/api/items?status=consumed');
+    const badge = document.getElementById('cart-badge');
+    if (items.length > 0) {
+      badge.textContent = items.length > 99 ? '99+' : items.length;
+      badge.style.display = 'block';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+async function openShoppingList() {
+  const container = document.getElementById('shopping-list-items');
+  container.innerHTML = '<div class="muted text-sm">Loading…</div>';
+  openSheet('overlay-shopping-list');
+  try {
+    const items = await api('/api/items?status=consumed');
+    if (!items.length) {
+      container.innerHTML = `<div class="empty"><div class="empty-icon">🛒</div>Shopping list is empty.<br>Consumed items appear here.</div>`;
+      return;
+    }
+    container.innerHTML = '';
+    items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'card';
+      row.style.display = 'flex';
+      row.style.gap = '10px';
+      row.innerHTML = `
+        <img src="${item.photo_url}" style="width:64px;height:64px;border-radius:8px;object-fit:cover;flex-shrink:0;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:0.9rem;">${esc(item.label || 'Unlabeled')}</div>
+          <div class="text-sm muted">Was in: ${esc(item.origin_bin_name || 'unknown bin')}</div>
+          <div style="display:flex;gap:6px;margin-top:8px;">
+            <button class="btn btn-primary btn-sm" onclick='openRestockSheet(${JSON.stringify(item).replace(/'/g, "&apos;")})'>↩️ Restock</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteFromShoppingList('${item.id}')">Delete</button>
+          </div>
+        </div>
+      `;
+      container.appendChild(row);
+    });
+  } catch(e) {
+    container.innerHTML = `<div class="empty">Error loading shopping list</div>`;
+  }
+}
+
+async function deleteFromShoppingList(itemId) {
+  if (!confirm('Permanently remove this item from the shopping list?')) return;
+  try {
+    await api(`/api/items/${itemId}/shopping-delete`, {method:'DELETE'});
+    toast('Removed from shopping list');
+    openShoppingList();
+    updateCartBadge();
+  } catch(e) { toast(e.message, true); }
+}
+
+function openRestockSheet(item) {
+  _restockItem = item;
+  _restockNewPhotoFile = null;
+  document.getElementById('restock-item-label').textContent = item.label || 'item';
+  document.getElementById('restock-photo').src = item.photo_url;
+  document.getElementById('restock-origin-bin-name').textContent = item.origin_bin_name || 'its original bin';
+  document.getElementById('restock-label').value = item.label;
+  document.getElementById('restock-notes').value = item.notes;
+  document.getElementById('restock-photo-status').textContent = '';
+
+  const sel = document.getElementById('restock-bin-select');
+  sel.innerHTML = '';
+  bins.filter(b => !b.is_virtual).forEach(b => {
+    const opt = document.createElement('option');
+    opt.value = b.id; opt.textContent = b.name;
+    if (b.id === item.origin_bin_id) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  setRestockMode('same');
+  closeSheet('overlay-shopping-list');
+  openSheet('overlay-restock');
+}
+
+function setRestockMode(mode) {
+  _restockMode = mode;
+  document.getElementById('restock-mode-same').classList.toggle('active', mode === 'same');
+  document.getElementById('restock-mode-update').classList.toggle('active', mode === 'update');
+  document.getElementById('restock-update-fields').style.display = (mode === 'update') ? 'block' : 'none';
+  document.getElementById('restock-same-note').style.display = (mode === 'same') ? 'block' : 'none';
+}
+
+function handleRestockPhotoUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  _restockNewPhotoFile = file;
+  document.getElementById('restock-photo').src = URL.createObjectURL(file);
+  document.getElementById('restock-photo-status').textContent = '✓ New photo selected — will re-run ML tagging';
+  document.getElementById('restock-photo-status').style.color = 'var(--success)';
+}
+
+async function confirmRestock() {
+  if (!_restockItem) return;
+  try {
+    let updated;
+    if (_restockMode === 'same') {
+      updated = await api(`/api/items/${_restockItem.id}/restock`, {method:'POST', body: JSON.stringify({mode:'same'})});
+    } else if (_restockNewPhotoFile) {
+      // photo replacement uses multipart
+      const fd = new FormData();
+      fd.append('bin_id', document.getElementById('restock-bin-select').value);
+      fd.append('label', document.getElementById('restock-label').value.trim());
+      fd.append('notes', document.getElementById('restock-notes').value.trim());
+      fd.append('photo', _restockNewPhotoFile);
+      updated = await fetch(`/api/items/${_restockItem.id}/restock-photo`, {method:'POST', body: fd}).then(r=>r.json());
+    } else {
+      updated = await api(`/api/items/${_restockItem.id}/restock`, {method:'POST', body: JSON.stringify({
+        mode: 'update',
+        bin_id: document.getElementById('restock-bin-select').value,
+        label:  document.getElementById('restock-label').value.trim(),
+        notes:  document.getElementById('restock-notes').value.trim(),
+      })});
+    }
+    closeSheet('overlay-restock');
+    toast(updated.wled_fired ? `Restocked — bin illuminated 💡` : 'Item restocked');
+    await refreshAllViews();
+  } catch(e) { toast(e.message, true); }
 }
 </script>
 </body>
