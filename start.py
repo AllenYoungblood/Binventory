@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""BINventory - quick start script"""
+"""BINventory — quick start script for local (non-Docker) runs."""
 import subprocess, sys, os
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -14,9 +14,10 @@ Starting server…
 Access on this machine: http://localhost:5000
 Access on your phone:   http://<YOUR-LAN-IP>:5000
 
-On first load, the CLIP ML model (~350 MB) will
-download and initialize. This takes 1-3 minutes.
-Subsequent starts are instant (model is cached).
+The CLIP ML model loads ON DEMAND (when tagging
+runs) and unloads afterward to free RAM.
+First-ever tagging job downloads the model
+(~350 MB, one time); it's cached after that.
 
 Press Ctrl+C to stop.
 """)
