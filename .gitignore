@@ -1,0 +1,55 @@
+# ── .gitignore ────────────────────────────────────────────────────────────────
+
+# Internal design notes, handoff docs and working history — kept locally,
+# not published. The public docs are README, ARCHITECTURE and DESIGN_ATTRIBUTION.
+internalDesignDocs/
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+env/
+.pytest_cache/
+
+# Local runtime data — never commit the library, photos or their backups.
+# (`*.db` alone misses the pre-migration copies named binventory.db.bak-*.)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.db.bak*
+*.bak-*
+*.sqlite
+*.sqlite3
+static/uploads/*
+!static/uploads/.gitkeep
+data/
+backups/
+orphaned_photos/
+
+# Model + embedding caches (re-created automatically)
+hf_cache/
+torch_cache/
+easyocr/
+label_cache/
+*.pt
+
+# Generated TLS certificate and private key — machine-specific, never commit
+certs/
+*.pem
+
+# Env / secrets
+.env
+
+# Editor / OS / tooling
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.log
+.claude/
+
+# Icon download cache (build_icons.py)
+.icon_cache/

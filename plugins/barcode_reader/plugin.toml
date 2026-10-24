@@ -1,0 +1,135 @@
+# Barcode & QR Reader — the first plugin, and the proving ground for the
+# plugin API. Everything the app shows about a
+# plugin before you enable it comes from this file.
+
+id          = "barcode_reader"
+name        = "Barcode & QR Reader"
+version     = "1.0.0"
+api_version = 1
+description = """Reads barcodes and QR codes in item photos. Codes become \
+searchable tags; QR text can name the item. Optionally looks product codes up \
+in free online databases to get a real product name."""
+
+# Decoding is local and cheap (~50 ms a photo), so it's on out of the box.
+# The online lookup below is a separate setting and starts OFF.
+default_enabled = true
+
+# items:write — it tags items and proposes names (core arbitrates).
+# network:external — only used when "Look up product names" is switched on.
+# web:routes — the Product lookup page (Plugins tab, and from an item).
+permissions = ["items:read", "items:write", "network:external", "web:routes"]
+
+# OpenCV is already installed as an EasyOCR dependency.
+requires = ["opencv-python-headless>=4.8"]
+imports  = ["cv2", "numpy"]
+
+[[settings]]
+key     = "lookup_enabled"
+type    = "toggle"
+label   = "Look up product names online"
+default = false
+help    = "Sends a barcode or part number (never a photo) to the sources switched on below. A hit renames the item unless you typed its name. Off: nothing leaves this computer."
+
+# Sources. Lookup tries them specialists-first (your URL, Mouser, Digi-Key,
+# then the general databases); the first hit wins.
+[[settings]]
+key     = "use_open_food"
+type    = "toggle"
+label   = "Open Food Facts — food and drink"
+default = true
+
+[[settings]]
+key     = "use_open_products"
+type    = "toggle"
+label   = "Open Products Facts — household and general goods"
+default = true
+
+[[settings]]
+key     = "use_upcitemdb"
+type    = "toggle"
+label   = "UPCitemdb — general merchandise and tools"
+default = true
+help    = "Free trial service: about 100 lookups a day."
+
+[[settings]]
+key     = "use_mouser"
+type    = "toggle"
+label   = "Mouser — electronic parts"
+default = false
+help    = "Looks up part numbers, not just retail barcodes. Needs a free Search API key from mouser.com (My Account → APIs)."
+
+[[settings]]
+key     = "mouser_key"
+type    = "secret"
+label   = "Mouser Search API key"
+default = ""
+
+[[settings]]
+key     = "use_digikey"
+type    = "toggle"
+label   = "Digi-Key — electronic parts"
+default = false
+help    = "Looks up part numbers. Needs a free app at developer.digikey.com (Product Information v4, production)."
+
+[[settings]]
+key     = "digikey_client_id"
+type    = "secret"
+label   = "Digi-Key client ID"
+default = ""
+
+[[settings]]
+key     = "digikey_client_secret"
+type    = "secret"
+label   = "Digi-Key client secret"
+default = ""
+
+[[settings]]
+key     = "use_custom"
+type    = "toggle"
+label   = "Your own lookup URL"
+default = false
+help    = "Any service, including one on your own network. Tried first."
+
+[[settings]]
+key     = "custom_url"
+type    = "text"
+label   = "Lookup URL"
+default = ""
+help    = "Put {code} where the code goes, e.g. http://parts.local/api/find?q={code}"
+
+[[settings]]
+key     = "custom_field"
+type    = "text"
+label   = "Name field in the answer"
+default = ""
+help    = "Dotted path to the name in a JSON answer, e.g. items.0.title. Leave blank if the answer is plain text."
+
+[[actions]]
+name       = "scan_existing"
+label      = "Scan photos not yet scanned"
+permission = "items:write"
+
+[[actions]]
+name       = "rescan_all"
+label      = "Re-scan every photo"
+permission = "items:write"
+confirm    = "Re-scan every photo for barcodes? Names you typed are never changed."
+
+[page]
+title = "Product lookup"
+path  = "/"
+
+[[links]]
+where = "item"
+label = "Look up product"
+icon  = "search"
+path  = "/?item={id}"
+
+[item_section]
+title = "Barcode"
+rows = [
+  { source = "product", label = "Product" },
+  { source = "codes",   label = "Code" },
+  { source = "qr_text", label = "QR text" },
+  { source = "links",   label = "Link", type = "link" },
+]

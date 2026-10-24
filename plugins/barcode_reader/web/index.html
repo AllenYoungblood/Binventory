@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product lookup</title>
+<link rel="stylesheet" href="/static/css/tokens.css">
+<link rel="stylesheet" href="/static/css/components.css">
+<style>
+  body { padding: 14px; font-size: 0.86rem; background: var(--bg); }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .panel h3 { margin-bottom: 8px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 0.76rem; line-height: 1.45; }
+  .bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  input[type=text] { flex: 1; min-width: 0; background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 9px; font-size: 0.9rem; }
+  .chip { display: inline-block; font-family: ui-monospace, Consolas, monospace; font-size: 0.78rem; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 3px 9px; cursor: pointer; color: var(--text); }
+  .chip:hover { border-color: var(--accent); }
+  .res { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .res:last-child { border-bottom: none; }
+  .res .grow { flex: 1; min-width: 0; }
+  .st { font-size: 0.68rem; font-weight: 700; border-radius: 10px; padding: 2px 8px; white-space: nowrap; }
+  .st.hit { background: var(--success-soft); color: var(--success); }
+  .st.miss { background: var(--card); color: var(--muted); }
+  .st.skipped { background: var(--warn-soft); color: var(--warn); }
+  .st.error { background: var(--danger-soft); color: var(--danger); }
+  .off { border-color: var(--warn); background: var(--warn-soft); }
+</style>
+</head>
+<body>
+
+<div id="off" class="panel off" style="display:none;">
+  <b>Online lookup is off.</b>
+  <div class="small muted" style="margin-top:4px;">Nothing leaves this computer until you switch on
+    "Look up product names online" in this plugin's settings, and pick the sources that suit what you store:
+    Mouser or Digi-Key for electronic parts, Open Products Facts or UPCitemdb for tools and household goods,
+    Open Food Facts for a pantry, or your own service.</div>
+</div>
+
+<div id="item-panel" class="panel" style="display:none;">
+  <h3 id="item-name"></h3>
+  <div id="item-codes" class="bar"></div>
+  <div id="item-product" class="small muted" style="margin-top:6px;"></div>
+</div>
+
+<div class="panel">
+  <h3>Look up a code</h3>
+  <div class="bar">
+    <input type="text" id="code" placeholder="Barcode or part number" autocomplete="off" enterkeyhint="search">
+    <button class="btn btn-primary" id="go">Look up</button>
+  </div>
+  <div id="sources" class="small muted" style="margin-top:8px;"></div>
+</div>
+
+<div id="results-panel" class="panel" style="display:none;">
+  <h3 id="results-title">Results</h3>
+  <div id="results"></div>
+</div>
+
+<script type="module">
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const api = async (url, opts = {}) => {
+  const r = await fetch(url, {headers: {'Content-Type': 'application/json'}, ...opts});
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || r.statusText);
+  return data;
+};
+const itemId = new URLSearchParams(location.search).get('item');
+const LABEL = { hit: 'Found', miss: 'Not found', skipped: 'Skipped', error: 'Error' };
+let info = null, lastKind = '';
+
+async function boot() {
+  info = await api('info' + (itemId ? '?item=' + encodeURIComponent(itemId) : ''));
+  $('off').style.display = info.enabled ? 'none' : 'block';
+  $('go').disabled = !info.enabled;
+  $('sources').innerHTML = info.sources.length
+    ? 'Asks, in order: ' + info.sources.map(s => `<b>${esc(s.name)}</b> (${esc(s.what)})`).join(', ') + '.'
+    : 'No sources are switched on.';
+  if (info.item) {
+    $('item-panel').style.display = 'block';
+    $('item-name').textContent = info.item.name;
+    $('item-codes').innerHTML = info.item.codes.length
+      ? '<span class="small muted">Its codes:</span>' + info.item.codes.map(c =>
+          `<span class="chip" data-v="${esc(c.value)}" data-k="${esc(c.kind)}">${esc(c.value)}</span>`).join('')
+      : '<span class="small muted">This item has no barcode yet. Type a part number below, or add its barcode from the item sheet.</span>';
+    $('item-product').textContent = info.item.product ? `Last used: ${info.item.product}` : '';
+    $('item-codes').querySelectorAll('.chip').forEach(ch => ch.addEventListener('click', () => {
+      $('code').value = ch.dataset.v; lastKind = ch.dataset.k; run();
+    }));
+    if (info.item.codes.length === 1) { $('code').value = info.item.codes[0].value; lastKind = info.item.codes[0].kind; }
+  }
+}
+
+async function run() {
+  const code = $('code').value.trim();
+  if (!code) return;
+  $('results-panel').style.display = 'block';
+  $('results-title').textContent = `Results for ${code}`;
+  $('results').innerHTML = '<div class="muted small">Asking…</div>';
+  try {
+    const d = await api('lookup', {method: 'POST', body: JSON.stringify({code, kind: lastKind})});
+    $('results').innerHTML = d.results.map((r, i) => `<div class="res">
+      <div class="grow"><div><b>${esc(r.provider)}</b> <span class="muted small">${esc(r.what)}</span></div>
+        ${r.name ? `<div style="margin-top:2px;">${esc(r.name)}</div>` : ''}
+        ${r.message ? `<div class="small muted" style="margin-top:2px;">${esc(r.message)}</div>` : ''}</div>
+      <span class="st ${r.status}">${LABEL[r.status]}</span>
+      ${r.name && info.item ? `<button class="btn btn-secondary btn-sm" data-i="${i}">Use name</button>` : ''}
+    </div>`).join('') || '<div class="muted small">No sources answered.</div>';
+    $('results').querySelectorAll('button[data-i]').forEach(b => b.addEventListener('click', async () => {
+      const r = d.results[+b.dataset.i];
+      b.disabled = true;
+      try {
+        await api('use', {method: 'POST', body: JSON.stringify({item: info.item.id, name: r.name, source: r.provider})});
+        b.textContent = 'Renamed';
+        $('item-name').textContent = r.name;
+      } catch (e) { b.disabled = false; alert(e.message); }
+    }));
+  } catch (e) { $('results').innerHTML = `<div class="small" style="color:var(--danger)">${esc(e.message)}</div>`; }
+}
+
+$('go').addEventListener('click', () => { lastKind = ''; run(); });
+$('code').addEventListener('keydown', e => { if (e.key === 'Enter') { lastKind = ''; run(); } });
+boot().catch(e => document.body.insertAdjacentHTML('afterbegin', `<div class="panel" style="color:var(--danger)">${esc(e.message)}</div>`));
+</script>
+</body>
+</html>

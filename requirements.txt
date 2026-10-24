@@ -1,10 +1,20 @@
-flask>=3.0
-flask-sqlalchemy>=3.1
+# Python 3.11+ (the plugin loader uses the stdlib tomllib).
+# Last full regression run: Python 3.13, Flask 3.1, Flask-SQLAlchemy 3.1,
+# Pillow 12.3, open-clip-torch 3.3, torch 2.13 (CPU), torchvision 0.28,
+# APScheduler 3.11, NumPy 2.5, EasyOCR 1.7.2, OpenCV 5.0, cryptography 50.
+#
+# Docker installs CPU-only torch first (see Dockerfile). Locally, do the same to
+# skip the ~2 GB CUDA build:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+flask>=3.0,<4
+flask-sqlalchemy>=3.1,<4
 pillow>=10.0
 open-clip-torch>=2.24
 torch>=2.0
 torchvision>=0.15
-apscheduler>=3.10
+apscheduler>=3.10,<4
 numpy>=1.24
 requests>=2.28
 easyocr>=1.7
+opencv-python-headless>=4.8
+cryptography>=41.0

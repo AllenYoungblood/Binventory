@@ -1,7 +1,7 @@
-# Electronics
+# Electronics shop list — modules, components, dev boards
 # One term per line. Blank lines and lines starting with # are ignored.
-# To DISABLE this whole category, rename the file to end in .off
-# (e.g. 17_electronics.txt.off). Restart the server after editing.
+# To DISABLE this whole list, rename the file to end in .off
+# (e.g. electronics_shop_list.txt.off), then use Settings -> Reload dictionaries.
 
 Arduino Uno
 Arduino Nano
@@ -110,7 +110,6 @@ vibration motor
 linear actuator
 solenoid
 pump motor
-fan
 cooling fan
 motor driver
 L298N driver
@@ -245,11 +244,8 @@ alligator clip
 test lead
 crimp connector
 spade connector
-ring terminal
 heat shrink
 wire ferrule
-soldering iron
-soldering station
 solder wire
 solder paste
 flux pen
@@ -257,14 +253,11 @@ desoldering pump
 solder wick
 helping hands
 PCB holder
-multimeter
 oscilloscope
 logic analyzer
 bench power supply
 function generator
 hot air rework station
-tweezers
-wire stripper
 flush cutter
 crimping tool
 ESD strap

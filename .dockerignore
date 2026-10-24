@@ -1,0 +1,55 @@
+# ── .dockerignore ─────────────────────────────────────────────────────────────
+# Keeps the build context small and keeps local data out of images. The
+# Dockerfile also COPYs an explicit file list, so this is the second line of
+# defence, not the only one.
+#
+# dictionaries/ is deliberately NOT ignored — the app has no tag vocabulary
+# without it.
+
+# VCS, CI, docs, tests, internal notes
+.git/
+.github/
+.gitignore
+*.md
+!plugins/README.md
+internalDesignDocs/
+tests/
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+env/
+
+# Local runtime data (provided by volumes at runtime)
+*.db
+*.db-*
+*.db.bak*
+*.bak-*
+*.sqlite
+*.sqlite3
+static/uploads/*
+!static/uploads/.gitkeep
+data/
+backups/
+orphaned_photos/
+label_cache/
+hf_cache/
+torch_cache/
+easyocr/
+*.pt
+
+# Secrets and machine-specific files
+certs/
+*.pem
+.env
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.log
+.claude/

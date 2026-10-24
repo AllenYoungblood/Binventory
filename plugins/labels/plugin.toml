@@ -1,0 +1,87 @@
+# Labels & Codes — print code labels for bins and items, on the label sizes
+# a Dymo LabelWriter takes. The codes themselves live in core (services/
+# codes.py), so a printed label keeps working even with this plugin off.
+
+id          = "labels"
+name        = "Labels & Codes"
+version     = "1.0.0"
+api_version = 1
+description = """Prints labels for bins and items as PDFs sized for common Dymo \
+labels (1×1 in up to 4×6 in). A QR label opens the bin or item straight from a \
+phone's camera; scanning an item's label or barcode can check it in or out."""
+
+# Local and light (no model, no network), so on out of the box.
+default_enabled = true
+
+# items:write — printing a label gives the bin or item its label code.
+# web:routes — the label maker page in the Plugins tab, and the PDF endpoint.
+permissions = ["items:read", "items:write", "bins:read", "web:routes"]
+
+imports = ["cv2", "numpy", "PIL"]
+
+[page]
+title = "Label maker"
+path  = "/"
+
+[[links]]
+where = "item"
+label = "Print label"
+icon  = "tag"
+path  = "/?item={id}"
+
+[[links]]
+where = "item"
+label = "Reprint label"
+icon  = "printer"
+path  = "/?item={id}&reprint=1"
+
+[[links]]
+where = "bin"
+label = "Label"
+icon  = "tag"
+path  = "/?bin={id}"
+
+[[links]]
+where = "bin"
+label = "Reprint label"
+icon  = "printer"
+path  = "/?bin={id}&reprint=1"
+
+[[settings]]
+key     = "code_style"
+type    = "select"
+label   = "Code style"
+options = ["QR code", "AprilTag", "Code 128"]
+# Code 128 is only offered once the switch below is on.
+option_requires = { "Code 128" = "allow_code128" }
+default = "QR code"
+help    = "QR code: any phone camera opens it. AprilTag: reads from much further away, from a photo in the Scan tab (bins only). The label maker shows read distances for each."
+
+[[settings]]
+key     = "allow_code128"
+type    = "toggle"
+label   = "Code 128 barcodes"
+default = false
+help    = "For handheld USB or Bluetooth barcode scanners only: phone cameras and photos can't read Code 128. Turn on to offer it as a code style."
+
+[[settings]]
+key     = "default_size"
+type    = "select"
+label   = "Default label size"
+options = ["1 × 1 in", "1 × 2⅛ in", "1¼ × 2¼ in", "1⅛ × 3½ in", "2⅛ × 4 in", "4 × 6 in"]
+default = "1⅛ × 3½ in"
+
+[[settings]]
+key     = "text_size"
+type    = "select"
+label   = "Default text size"
+options = ["Smallest", "Small", "Medium", "Large", "Largest"]
+default = "Medium"
+help    = "Smaller text fits more of a long name on the label; larger reads from further away."
+
+[[settings]]
+key     = "base_url"
+type    = "text"
+label   = "Address in QR codes"
+default = ""
+help    = "Where a phone should go when it scans a label, e.g. https://192.168.1.50:5000. Leave blank to use this server's network address."

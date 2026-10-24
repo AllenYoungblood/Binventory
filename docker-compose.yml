@@ -1,59 +1,54 @@
 # ── BINventory — docker-compose.yml ──────────────────────────────────────────
-# Usage:
 #   Start:   docker compose up -d
-#   Stop:    docker compose down
+#   Stop:    docker compose down          (data is kept)
 #   Logs:    docker compose logs -f
-#   Rebuild: docker compose up -d --build
+#   Update:  docker compose up -d --build
+#
+# Settings come from .env (copy .env.example). Defaults work without one.
 
 services:
   binventory:
     build:
       context: .
       dockerfile: Dockerfile
-
+    image: binventory:latest
     container_name: binventory
-
-    restart: unless-stopped          # auto-restart on crash or system reboot
+    restart: unless-stopped
+    init: true                       # forwards SIGTERM so `docker compose down` is instant
 
     ports:
-      - "${HOST_PORT:-5000}:5000"    # change HOST_PORT in .env to use another port
+      - "${HOST_PORT:-5000}:5000"
+      # AI Assistant (MCP) plugin, when enabled in Settings -> Plugins. Published
+      # on the host's 127.0.0.1 only, so only programs on this machine can reach
+      # it. For other devices, also turn on "Allow other devices" in the plugin
+      # (token + HTTPS) and change this to "${MCP_PORT:-5050}:5050".
+      - "127.0.0.1:${MCP_PORT:-5050}:5050"
 
     volumes:
-      # ── Persistent data (named volumes: survive restarts AND rebuilds) ─────
-      # binventory_uploads → item photos
-      # binventory_data    → SQLite DB, CLIP weights, EasyOCR weights,
-      #                       and the cached label-embedding files
+      # Named volumes survive restarts AND rebuilds; only `down -v` deletes them.
+      #   binventory_uploads -> item photos
+      #   binventory_data    -> SQLite DB, TLS certificate, CLIP + EasyOCR weights,
+      #                         label-embedding cache, backups, quarantined photos
       - binventory_uploads:/app/static/uploads
       - binventory_data:/app/data
 
-      # ── Tag dictionaries (bind mount: edit them from your host) ────────────
-      # Mounted from the project folder so you can open the .txt files in any
-      # editor, disable a category by renaming it to *.off, and use
-      # ⚙ -> Dictionaries -> "Reload from disk" without rebuilding.
-      # The app also WRITES here (Vocabulary Review -> Add to Dictionary), so
-      # this mount must be writable — see the permissions note in DEPLOY.md.
+      # Tag dictionaries, bind-mounted so you can edit the .txt files on the
+      # host and apply them with Settings -> Dictionaries -> Reload from disk.
+      # The app also writes here (Vocabulary Review -> Add to Dictionary), so on
+      # Linux the folder must be writable by UID 1000 — see the README.
       - ./dictionaries:/app/dictionaries
 
     environment:
-      - PYTHONUNBUFFERED=1
+      # Your computer's LAN IP, added to the self-signed certificate so phones
+      # don't get a name-mismatch error. The container can't detect it itself.
+      - BINVENTORY_CERT_HOSTS=${HOST_LAN_IP:-}
+      # Set to 1 to serve plain HTTP (live camera capture then only works on
+      # localhost; photo upload still works everywhere).
+      - BINVENTORY_HTTP=${BINVENTORY_HTTP:-0}
 
-      # Keep the SQLite DB inside the persisted volume. Without this it would
-      # live in the container layer and be LOST on every rebuild.
-      - BINVENTORY_DB_DIR=/app/data
-
-      # Model caches also live in the persisted volume, so the CLIP (~350 MB)
-      # and EasyOCR (~100 MB) weights download only once, ever.
-      - HF_HOME=/app/data/hf_cache
-      - TORCH_HOME=/app/data/torch_cache
-      - EASYOCR_MODULE_PATH=/app/data/easyocr
-
-      - FLASK_ENV=${FLASK_ENV:-production}
-
-    # ── Resources ─────────────────────────────────────────────────────────────
-    # CLIP (~1.4 GB) and EasyOCR (~0.7 GB) can be resident at the same time
-    # during a tagging run that uses both, so 2 GB is not enough. The app
-    # unloads both once idle (see Model Keep-Alive in Settings), so steady-state
-    # usage is far lower than this ceiling.
+    # CLIP (~1.4 GB) and EasyOCR (~0.7 GB) can be resident together during a
+    # run that uses both. Both unload when idle (Settings -> Model Keep-Alive),
+    # so steady-state use is far below this ceiling.
     deploy:
       resources:
         limits:
@@ -61,18 +56,6 @@ services:
         reservations:
           memory: 512m
 
-    healthcheck:
-      test: ["CMD", "python", "-c",
-             "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/status')"]
-      interval: 30s
-      timeout: 10s
-      start_period: 30s
-      retries: 3
-
-# ── Named volumes ─────────────────────────────────────────────────────────────
-# Docker manages these on your host. Inspect with:
-#   docker volume inspect binventory_data
-# Backup instructions are in DEPLOY.md.
 volumes:
   binventory_uploads:
   binventory_data:

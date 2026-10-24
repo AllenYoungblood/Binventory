@@ -4,752 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>BINventory</title>
-<style>
-  :root {
-    --bg:       #0f1117;
-    --surface:  #1a1d27;
-    --card:     #22263a;
-    --border:   #2e3248;
-    --accent:   #7c6fff;
-    --accent2:  #a78bfa;
-    --text:     #e8eaf0;
-    --muted:    #7a7f99;
-    --success:  #34d399;
-    --danger:   #f87171;
-    --warn:     #fbbf24;
-    --radius:   12px;
-    --font:     'Inter', system-ui, sans-serif;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: var(--font);
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100dvh;
-    overscroll-behavior: none;
-  }
-
-  /* ── TYPOGRAPHY ── */
-  h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; }
-  h2 { font-size: 1.1rem; font-weight: 600; }
-  h3 { font-size: 0.95rem; font-weight: 600; }
-
-  /* ── LAYOUT ── */
-  #app { display: flex; flex-direction: column; height: 100dvh; }
-
-  header {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 12px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-
-  .logo {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 1.1rem; font-weight: 700; color: var(--accent2);
-    letter-spacing: -0.02em;
-  }
-  .logo svg { flex-shrink: 0; }
-
-  .clip-status {
-    margin-left: auto;
-    font-size: 0.72rem;
-    padding: 3px 8px;
-    border-radius: 20px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    flex-shrink: 0;
-  }
-  .clip-status.loading { background: #2d2a1a; color: var(--warn); }
-  .clip-status.ready   { background: #0d2d20; color: var(--success); }
-
-  /* ── NAV TABS ── */
-  nav {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    flex-shrink: 0;
-  }
-  nav button {
-    flex: 1;
-    background: none;
-    border: none;
-    padding: 12px 4px;
-    color: var(--muted);
-    font-size: 0.78rem;
-    font-weight: 600;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all .15s;
-    letter-spacing: 0.03em;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-  }
-  nav button svg { opacity: .6; }
-  nav button.active {
-    color: var(--accent2);
-    border-bottom-color: var(--accent);
-  }
-  nav button.active svg { opacity: 1; }
-
-  /* ── MAIN CONTENT ── */
-  main {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* ── VIEWS ── */
-  .view { display: none; }
-  .view.active { display: block; }
-
-  /* ── CARDS ── */
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px;
-    margin-bottom: 10px;
-  }
-
-  /* ── BIN LIST ── */
-  .bin-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-  @media (min-width: 500px) {
-    .bin-grid { grid-template-columns: repeat(3, 1fr); }
-  }
-  @media (min-width: 700px) {
-    .bin-grid { grid-template-columns: repeat(4, 1fr); }
-  }
-
-  .bin-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 12px;
-    cursor: pointer;
-    transition: transform .1s, box-shadow .1s;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .bin-card:active { transform: scale(.97); }
-  .bin-card .bin-dot {
-    width: 28px; height: 28px;
-    border-radius: 8px;
-    flex-shrink: 0;
-  }
-  .bin-card .bin-name {
-    font-weight: 700;
-    font-size: 0.95rem;
-    line-height: 1.2;
-    word-break: break-word;
-  }
-  .bin-card .bin-meta {
-    font-size: 0.75rem;
-    color: var(--muted);
-  }
-  .bin-card .bin-count {
-    font-size: 0.72rem;
-    font-weight: 700;
-    background: var(--border);
-    padding: 2px 7px;
-    border-radius: 20px;
-    width: fit-content;
-    color: var(--text);
-  }
-
-  /* Add bin card */
-  .bin-add {
-    border: 2px dashed var(--border);
-    background: transparent;
-    justify-content: center;
-    align-items: center;
-    min-height: 90px;
-    color: var(--muted);
-    font-size: 0.85rem;
-    font-weight: 600;
-    gap: 6px;
-  }
-  .bin-add:hover { border-color: var(--accent); color: var(--accent2); }
-
-  /* ── BUTTONS ── */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 16px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity .1s, transform .1s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .btn:active { opacity: .8; transform: scale(.97); }
-  .btn-primary { background: var(--accent); color: #fff; }
-  .btn-secondary { background: var(--border); color: var(--text); }
-  .btn-danger { background: #2d1515; color: var(--danger); border: 1px solid #4a1f1f; }
-  .btn-sm { padding: 6px 12px; font-size: 0.78rem; }
-  .btn-full { width: 100%; }
-  .btn-icon {
-    background: var(--border);
-    color: var(--muted);
-    padding: 8px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .btn-icon:active { opacity: .7; }
-
-  /* ── FORMS ── */
-  .field { margin-bottom: 14px; }
-  .field label {
-    display: block;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--muted);
-    margin-bottom: 5px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-  input[type="text"], input[type="color"], textarea, select {
-    width: 100%;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 12px;
-    color: var(--text);
-    font-size: 0.9rem;
-    font-family: var(--font);
-    outline: none;
-    transition: border-color .15s;
-  }
-  input:focus, textarea:focus, select:focus {
-    border-color: var(--accent);
-  }
-  input[type="color"] {
-    padding: 4px;
-    height: 42px;
-    cursor: pointer;
-  }
-  textarea { resize: vertical; min-height: 70px; }
-
-  /* ── MODAL / SHEET ── */
-  .overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,.65);
-    z-index: 200;
-    display: none;
-    align-items: flex-end;
-    justify-content: center;
-    backdrop-filter: blur(4px);
-  }
-  .overlay.active { display: flex; }
-  .sheet {
-    background: var(--surface);
-    border-radius: 20px 20px 0 0;
-    border-top: 1px solid var(--border);
-    padding: 20px 16px 32px;
-    width: 100%;
-    max-width: 600px;
-    max-height: 92dvh;
-    overflow-y: auto;
-    animation: slideUp .2s ease;
-  }
-  @keyframes slideUp {
-    from { transform: translateY(100%); }
-    to   { transform: translateY(0); }
-  }
-  .sheet-handle {
-    width: 36px; height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    margin: 0 auto 16px;
-  }
-  .sheet-title {
-    font-size: 1rem;
-    font-weight: 700;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  /* ── CAMERA / PHOTO ── */
-  #camera-container {
-    position: relative;
-    background: #000;
-    border-radius: var(--radius);
-    overflow: hidden;
-    aspect-ratio: 4/3;
-    max-height: 60dvh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 12px;
-  }
-  #camera-video {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    display: none;
-  }
-  #camera-canvas { display: none; }
-  #photo-preview {
-    width: 100%; height: 100%;
-    object-fit: contain;
-    display: none;
-  }
-  .camera-placeholder {
-    color: var(--muted);
-    text-align: center;
-    font-size: 0.85rem;
-  }
-  .camera-controls {
-    display: flex; gap: 10px; margin-bottom: 12px;
-  }
-
-  /* ── ITEM GRID ── */
-  .item-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-  @media (min-width: 500px) {
-    .item-grid { grid-template-columns: repeat(3, 1fr); }
-  }
-  @media (min-width: 700px) {
-    .item-grid { grid-template-columns: repeat(4, 1fr); }
-  }
-
-  .item-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    cursor: pointer;
-    transition: transform .1s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .item-card:active { transform: scale(.97); }
-  .item-card img {
-    width: 100%;
-    aspect-ratio: 1;
-    object-fit: cover;
-    display: block;
-    background: #000;
-  }
-  .item-card-body { padding: 8px; }
-  .item-card-label {
-    font-size: 0.82rem;
-    font-weight: 600;
-    line-height: 1.3;
-    margin-bottom: 3px;
-  }
-  .item-card-bin {
-    font-size: 0.72rem;
-    color: var(--muted);
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .bin-pip {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    display: inline-block;
-  }
-
-  /* Tags */
-  .tag-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    margin-top: 6px;
-  }
-  .tag {
-    font-size: 0.7rem;
-    background: var(--border);
-    color: var(--muted);
-    border-radius: 5px;
-    padding: 2px 7px;
-    font-weight: 500;
-  }
-
-  /* ── SEARCH ── */
-  .search-bar {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-  .search-input-wrap {
-    flex: 1;
-    position: relative;
-  }
-  .search-input-wrap svg {
-    position: absolute;
-    left: 10px; top: 50%;
-    transform: translateY(-50%);
-    color: var(--muted);
-    pointer-events: none;
-  }
-  .search-input-wrap input {
-    padding-left: 36px;
-  }
-
-  /* ── BIN DETAIL HEADER ── */
-  .bin-detail-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-  .bin-detail-dot {
-    width: 20px; height: 20px;
-    border-radius: 6px;
-    flex-shrink: 0;
-  }
-
-  /* ── ITEM DETAIL ── */
-  .item-detail-photo {
-    width: 100%;
-    border-radius: var(--radius);
-    margin-bottom: 12px;
-    object-fit: contain;
-    max-height: 300px;
-    background: #000;
-    display: block;
-  }
-
-  /* ── SEARCH SCORE BAR ── */
-  .score-bar {
-    height: 2px;
-    background: var(--border);
-    border-radius: 2px;
-    margin-top: 4px;
-    overflow: hidden;
-  }
-  .score-fill {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 2px;
-  }
-
-  /* ── EMPTY STATES ── */
-  .empty {
-    text-align: center;
-    color: var(--muted);
-    padding: 48px 16px;
-    font-size: 0.9rem;
-    line-height: 1.6;
-  }
-  .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
-
-  /* ── TOAST ── */
-  #toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%) translateY(100px);
-    background: #fff;
-    color: #111;
-    padding: 10px 18px;
-    border-radius: 30px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    z-index: 999;
-    transition: transform .25s;
-    white-space: nowrap;
-    box-shadow: 0 4px 20px rgba(0,0,0,.4);
-  }
-  #toast.show { transform: translateX(-50%) translateY(0); }
-
-  /* ── UTILS ── */
-  .flex { display: flex; }
-  .flex-center { display: flex; align-items: center; }
-  .gap-8 { gap: 8px; }
-  .gap-10 { gap: 10px; }
-  .mt-8 { margin-top: 8px; }
-  .mt-12 { margin-top: 12px; }
-  .mb-12 { margin-bottom: 12px; }
-  .muted { color: var(--muted); }
-  .text-sm { font-size: 0.82rem; }
-  .text-danger { color: var(--danger); }
-  .text-success { color: var(--success); }
-  .divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
-
-  /* ── SCHEDULE PANEL ── */
-  .schedule-panel {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 14px;
-    margin-top: 12px;
-  }
-  .schedule-panel label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--muted);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    display: block;
-    margin-bottom: 6px;
-  }
-  .time-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .time-row input[type="number"] {
-    width: 64px;
-    text-align: center;
-    padding: 8px 6px;
-    font-size: 1rem;
-    font-weight: 700;
-  }
-  .time-sep {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--muted);
-  }
-  .next-run-label {
-    font-size: 0.75rem;
-    color: var(--success);
-    margin-top: 6px;
-  }
-
-  /* ── WLED ── */
-  .wled-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.68rem;
-    font-weight: 700;
-    padding: 2px 7px;
-    border-radius: 10px;
-    background: #1a1530;
-    color: #a78bfa;
-    border: 1px solid #3d2f7a;
-    letter-spacing: 0.03em;
-  }
-  .wled-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: #a78bfa;
-    animation: pulse-dot 1.8s ease-in-out infinite;
-  }
-  @keyframes pulse-dot {
-    0%,100% { opacity: 1; transform: scale(1); }
-    50%      { opacity: 0.4; transform: scale(0.7); }
-  }
-  .find-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 11px;
-    border-radius: 8px;
-    border: 1px solid #3d2f7a;
-    background: #1a1530;
-    color: #a78bfa;
-    font-size: 0.75rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background .15s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .find-btn:active { background: #2d1f5e; }
-  .find-btn.firing {
-    background: #2d1f5e;
-    animation: find-pulse .6s ease-in-out infinite alternate;
-  }
-  @keyframes find-pulse {
-    from { box-shadow: 0 0 0 0 rgba(167,139,250,.4); }
-    to   { box-shadow: 0 0 0 8px rgba(167,139,250,0); }
-  }
-  .led-strip {
-    display: flex;
-    gap: 3px;
-    flex-wrap: wrap;
-    padding: 10px;
-    background: #0a0a0f;
-    border-radius: 8px;
-    margin: 8px 0;
-    min-height: 36px;
-    align-items: center;
-  }
-  .led-pip {
-    width: 14px; height: 14px;
-    border-radius: 50%;
-    background: #222;
-    border: 1px solid #333;
-    flex-shrink: 0;
-    transition: background .2s, box-shadow .2s;
-  }
-  .led-pip.active {
-    border-color: transparent;
-  }
-  .jog-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin: 6px 0;
-  }
-  .jog-btn {
-    background: var(--border);
-    border: none;
-    border-radius: 6px;
-    padding: 6px 12px;
-    color: var(--text);
-    font-weight: 700;
-    font-size: 0.85rem;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .jog-btn:active { opacity: .7; }
-  .jog-label {
-    font-size: 0.78rem;
-    color: var(--muted);
-    min-width: 80px;
-  }
-  .wled-section {
-    margin-bottom: 14px;
-  }
-  .wled-section-title {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 6px;
-  }
-  .effect-row {
-    display: flex;
-    gap: 8px;
-  }
-  .effect-btn {
-    flex: 1;
-    padding: 8px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: var(--bg);
-    color: var(--muted);
-    font-size: 0.82rem;
-    font-weight: 600;
-    cursor: pointer;
-    text-align: center;
-    transition: all .15s;
-  }
-  .effect-btn.active {
-    border-color: var(--accent);
-    background: #1a1530;
-    color: var(--accent2);
-  }
-  .brightness-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .brightness-row input[type=range] {
-    flex: 1;
-    accent-color: var(--accent);
-  }
-
-  /* ── LOADING SPINNER ── */
-  .spinner {
-    width: 20px; height: 20px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin .6s linear infinite;
-    flex-shrink: 0;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .processing-row {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px;
-    background: var(--bg);
-    border-radius: 8px;
-    font-size: 0.82rem;
-    color: var(--muted);
-    margin-bottom: 10px;
-  }
-
-  /* ── BIN FILTER CHIPS ── */
-  .chip-row {
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    margin-bottom: 12px;
-    scrollbar-width: none;
-  }
-  .chip-row::-webkit-scrollbar { display: none; }
-  .chip {
-    flex-shrink: 0;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    border: 1px solid var(--border);
-    background: var(--card);
-    color: var(--muted);
-    cursor: pointer;
-    white-space: nowrap;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .chip.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-  }
-</style>
+<link rel="stylesheet" href="/static/css/tokens.css">
+<link rel="stylesheet" href="/static/css/layout.css">
+<link rel="stylesheet" href="/static/css/components.css">
+<link rel="stylesheet" href="/static/css/features.css">
 </head>
 <body>
 <div id="app">
 
   <header>
     <div class="logo">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-        <line x1="12" y1="22.08" x2="12" y2="12"/>
-      </svg>
+      <svg class="i" aria-hidden="true" style="width:22px;height:22px;"><use href="/static/icons/lucide.svg#package"/></svg>
       BINventory
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0;">
-      <span id="clip-badge" class="clip-status loading">⏳ Loading ML…</span>
+      <span id="clip-badge" class="clip-status loading"><svg class="i i-spin" aria-hidden="true"><use href="/static/icons/lucide.svg#loader-circle"/></svg> Loading ML…</span>
       <div id="queue-controls" style="display:none;align-items:center;gap:6px;">
-        <span id="queue-badge" style="display:none;font-size:0.72rem;font-weight:700;background:#2d1f5e;color:#a78bfa;padding:3px 8px;border-radius:20px;white-space:nowrap;"></span>
+        <span id="queue-badge" style="display:none;font-size:0.72rem;font-weight:700;background:var(--accent-soft);color:var(--accent2);padding:3px 8px;border-radius:20px;white-space:nowrap;"></span>
         <button id="autotag-btn" onclick="toggleAutoTag()" title="Toggle auto-tagging" style="font-size:0.72rem;font-weight:700;padding:3px 8px;border-radius:20px;border:none;cursor:pointer;white-space:nowrap;"></button>
-        <button id="runtags-btn" onclick="runAllTags()" title="Tag all untagged items now" style="display:none;font-size:0.72rem;font-weight:700;padding:3px 8px;border-radius:20px;border:none;cursor:pointer;background:#0d2d20;color:#34d399;white-space:nowrap;">▶ Tag All</button>
-        <button onclick="openSheet('overlay-ml-settings');loadOcrSettings();loadDictionaries()" title="ML Settings" style="background:var(--border);border:none;border-radius:20px;padding:3px 8px;cursor:pointer;color:var(--muted);font-size:0.78rem;">⚙</button>
-        <button onclick="openShoppingList()" title="Shopping List" style="position:relative;background:var(--border);border:none;border-radius:20px;padding:3px 8px;cursor:pointer;color:var(--muted);font-size:0.85rem;">
-          🛒
-          <span id="cart-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#f87171;color:#fff;font-size:0.62rem;font-weight:700;border-radius:10px;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 2px;"></span>
+        <button id="runtags-btn" onclick="runAllTags()" title="Tag all untagged items now" style="display:none;font-size:0.72rem;font-weight:700;padding:3px 8px;border-radius:20px;border:none;cursor:pointer;background:var(--success-soft);color:var(--success);white-space:nowrap;"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#play"/></svg> Tag All</button>
+        <button onclick="openSheet('overlay-ml-settings');loadOcrSettings();loadDictionaries()" title="ML Settings" style="background:var(--border);border:none;border-radius:20px;padding:3px 8px;cursor:pointer;color:var(--muted);font-size:0.78rem;display:inline-flex;align-items:center;"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#settings"/></svg></button>
+        <button onclick="openShoppingList()" title="Shopping List" style="position:relative;background:var(--border);border:none;border-radius:20px;padding:3px 8px;cursor:pointer;color:var(--muted);font-size:0.85rem;display:inline-flex;align-items:center;">
+          <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#shopping-cart"/></svg>
+          <span id="cart-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;font-size:0.62rem;font-weight:700;border-radius:10px;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 2px;"></span>
         </button>
       </div>
     </div>
@@ -757,22 +34,42 @@
 
   <nav>
     <button class="active" onclick="showView('bins')" id="tab-bins">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      <svg class="i" aria-hidden="true" style="width:18px;height:18px;"><use href="/static/icons/lucide.svg#package"/></svg>
       Bins
     </button>
     <button onclick="showView('inventory')" id="tab-inventory">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <svg class="i" aria-hidden="true" style="width:18px;height:18px;"><use href="/static/icons/lucide.svg#layout-grid"/></svg>
       Inventory
     </button>
     <button onclick="showView('search')" id="tab-search">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <svg class="i" aria-hidden="true" style="width:18px;height:18px;"><use href="/static/icons/lucide.svg#search"/></svg>
       Search
+    </button>
+    <button onclick="showView('scan')" id="tab-scan">
+      <svg class="i" aria-hidden="true" style="width:18px;height:18px;"><use href="/static/icons/lucide.svg#scan-barcode"/></svg>
+      Scan
+    </button>
+    <button onclick="showView('plugins')" id="tab-plugins">
+      <svg class="i" aria-hidden="true" style="width:18px;height:18px;"><use href="/static/icons/lucide.svg#puzzle"/></svg>
+      Plugins
     </button>
   </nav>
 
   <main>
     <!-- ═══════════════ BINS VIEW ═══════════════ -->
     <div id="view-bins" class="view active">
+      <div class="search-bar">
+        <div class="search-input-wrap" style="flex:1">
+          <svg class="i" aria-hidden="true" style="width:16px;height:16px;"><use href="/static/icons/lucide.svg#search"/></svg>
+          <input type="text" id="bin-search-input" placeholder="Search bins by name or location…" oninput="scheduleBinSearch()" autocomplete="off">
+        </div>
+        <button id="bin-search-clear" onclick="clearBinSearch()" style="display:none;flex-shrink:0;background:var(--border);border:none;color:var(--muted);border-radius:8px;padding:0 12px;cursor:pointer;align-items:center;"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#x"/></svg></button>
+      </div>
+      <div class="chip-row" style="margin-bottom:10px;">
+        <div class="chip active" id="binscope-top" onclick="setBinScope('top')"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#folders"/></svg> Top level only</div>
+        <div class="chip" id="binscope-all" onclick="setBinScope('all')"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#layers"/></svg> All bins (incl. nested)</div>
+      </div>
+      <div id="bin-search-status" class="muted text-sm mb-12"></div>
       <div id="bins-grid" class="bin-grid"></div>
     </div>
 
@@ -780,7 +77,7 @@
     <div id="view-bin-detail" class="view">
       <div class="bin-detail-header">
         <button class="btn-icon" onclick="showView('bins')">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          <svg class="i" aria-hidden="true" style="width:18px;height:18px;"><use href="/static/icons/lucide.svg#chevron-left"/></svg>
         </button>
         <div id="bin-detail-dot" class="bin-detail-dot"></div>
         <div>
@@ -789,20 +86,38 @@
         </div>
         <div style="margin-left:auto;display:flex;gap:8px;">
           <button class="btn-icon" id="bin-edit-btn" onclick="openEditBinSheet()" title="Edit bin">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <svg class="i" aria-hidden="true" style="width:16px;height:16px;"><use href="/static/icons/lucide.svg#square-pen"/></svg>
           </button>
-          <button id="bin-find-btn" class="find-btn" style="display:none" onclick="findBin(currentBinId)">
-            💡 Find
+          <button id="bin-find-btn" class="find-btn" style="display:none" onclick="findCurrentBin()">
+            <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#lightbulb"/></svg> Find
           </button>
-          <button class="btn-icon" id="bin-wled-btn" onclick="openWledSheet(currentBinId)" style="display:none" title="WLED Setup">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <button class="btn-icon" id="bin-wled-btn" onclick="openCurrentBinWled()" style="display:none" title="WLED Setup">
+            <svg class="i" aria-hidden="true" style="width:16px;height:16px;"><use href="/static/icons/lucide.svg#sun"/></svg>
+          </button>
+          <button class="btn btn-secondary btn-sm" id="bin-bulk-add-btn" onclick="openBulkAdd()" title="Rapid intake — capture item after item">
+            <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#zap"/></svg> Bulk
           </button>
           <button class="btn btn-primary btn-sm" id="bin-add-item-btn" onclick="openAddItemSheet()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <svg class="i" aria-hidden="true" style="width:14px;height:14px;"><use href="/static/icons/lucide.svg#plus"/></svg>
             Add Item
           </button>
         </div>
       </div>
+      <!-- Breadcrumb: shows where this bin lives when it's nested -->
+      <div id="bin-path-row" style="display:none;font-size:0.76rem;color:var(--muted);margin-bottom:10px;"></div>
+      <!-- Buttons plugins declare for bins ([[links]] where = "bin"), e.g. Label -->
+      <div id="bin-plugin-links" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+
+      <!-- Bins nested inside this one -->
+      <div id="sub-bins-section" style="display:none;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div class="wled-section-title" style="margin:0;"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#package"/></svg> Bins inside <span id="sub-bin-count"></span></div>
+          <button class="btn btn-secondary btn-sm" onclick="unpackAllBins()">Unpack all</button>
+        </div>
+        <div id="sub-bins-grid" class="bin-grid"></div>
+      </div>
+
+      <div id="bin-items-title" class="wled-section-title" style="display:none;margin-bottom:8px;">Items</div>
       <div id="bin-items-grid" class="item-grid"></div>
     </div>
 
@@ -816,14 +131,59 @@
     <div id="view-search" class="view">
       <div class="search-bar">
         <div class="search-input-wrap" style="flex:1">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <svg class="i" aria-hidden="true" style="width:16px;height:16px;"><use href="/static/icons/lucide.svg#search"/></svg>
           <input type="text" id="search-input" placeholder="screwdriver, red cable, hammer…" oninput="scheduleSearch()" autocomplete="off">
         </div>
         <button id="smart-search-btn" onclick="doSmartSearch()" title="Smart search — loads the ML model to match by meaning"
-          style="flex-shrink:0;background:#1a1530;border:1px solid #3d2f7a;color:#a78bfa;border-radius:8px;padding:0 12px;font-size:1rem;cursor:pointer;">✨</button>
+          style="flex-shrink:0;background:var(--accent-soft);border:1px solid var(--accent-line);color:var(--accent2);border-radius:8px;padding:0 12px;font-size:1rem;cursor:pointer;display:flex;align-items:center;"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#sparkles"/></svg></button>
+        <!-- Reverse image search: photograph a thing, find matching items you already own -->
+        <label id="photo-search-btn" title="Search by photo — find items that look like this"
+          style="flex-shrink:0;background:var(--accent-soft);border:1px solid var(--accent-line);color:var(--accent2);border-radius:8px;padding:0 12px;font-size:1rem;cursor:pointer;display:flex;align-items:center;">
+          <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#camera"/></svg>
+          <input type="file" accept="image/*" capture="environment" style="display:none" onchange="doPhotoSearch(event)">
+        </label>
       </div>
       <div id="search-status" class="muted text-sm mb-12"></div>
       <div id="search-results" class="item-grid"></div>
+    </div>
+
+    <!-- ═══════════════ SCAN VIEW ═══════════════ -->
+    <!-- Labels and barcodes as local ids (services/codes.py). A box label
+         opens the box; an item offers check out / return. -->
+    <div id="view-scan" class="view">
+      <button class="btn btn-primary btn-full" id="scan-open" style="padding:16px;font-size:1rem;margin-bottom:6px;">
+        <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#camera"/></svg> Scan a label or barcode
+      </button>
+      <div style="text-align:center;margin-bottom:12px;">
+        <label class="muted text-sm" style="cursor:pointer;text-decoration:underline;">or choose a photo
+          <input type="file" id="scan-photo" accept="image/*" style="display:none">
+        </label>
+      </div>
+      <div class="search-bar">
+        <div class="search-input-wrap" style="flex:1">
+          <svg class="i" aria-hidden="true" style="width:16px;height:16px;"><use href="/static/icons/lucide.svg#barcode"/></svg>
+          <input type="text" id="scan-input" placeholder="…or type a code, or use a USB scanner" autocomplete="off" enterkeyhint="search">
+        </div>
+      </div>
+      <div class="schedule-panel" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
+        <div>
+          <div style="font-size:0.85rem;font-weight:600;"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#zap"/></svg> Check in/out on scan</div>
+          <div style="font-size:0.74rem;color:var(--muted);margin-top:2px;">Scanning an item checks it out, or returns it if it's out. Each scan can be undone.</div>
+        </div>
+        <button id="scan-quick" style="flex-shrink:0;font-size:0.78rem;font-weight:700;padding:6px 12px;border-radius:20px;border:none;cursor:pointer;white-space:nowrap;"></button>
+      </div>
+      <div id="scan-results"></div>
+    </div>
+
+    <!-- ═══════════════ PLUGINS VIEW ═══════════════ -->
+    <!-- One panel per plugin: on/off, permissions, settings, actions, status,
+         and its own page if it has one (static/js/plugins.js). -->
+    <div id="view-plugins" class="view">
+      <div style="font-size:0.76rem;color:var(--muted);line-height:1.4;margin-bottom:10px;">
+        Plugins run with the same access as the app — install only ones you trust.
+      </div>
+      <div id="plugin-tabs" class="chip-row" style="margin-bottom:12px;"></div>
+      <div id="plugin-panel"></div>
     </div>
   </main>
 </div>
@@ -837,12 +197,12 @@
     <div class="sheet-title">
       New Bin
       <button class="btn-icon" onclick="closeSheet('overlay-new-bin')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg class="i" aria-hidden="true" style="width:16px;height:16px;"><use href="/static/icons/lucide.svg#x"/></svg>
       </button>
     </div>
     <div class="field"><label>Bin Label *</label><input id="new-bin-name" type="text" placeholder="A1, Top Shelf, Red Box…"></div>
     <div class="field"><label>Location (optional)</label><input id="new-bin-location" type="text" placeholder="Garage, Attic, Office…"></div>
-    <div class="field"><label>Color</label><input id="new-bin-color" type="color" value="#7c6fff"></div>
+    <div class="field"><label>Color</label><input id="new-bin-color" type="color" value="#3cc4d9"></div>
     <button class="btn btn-primary btn-full" onclick="createBin()">Create Bin</button>
   </div>
 </div>
@@ -854,15 +214,26 @@
     <div class="sheet-title">
       Edit Bin
       <button class="btn-icon" onclick="closeSheet('overlay-edit-bin')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg class="i" aria-hidden="true" style="width:16px;height:16px;"><use href="/static/icons/lucide.svg#x"/></svg>
       </button>
     </div>
     <div class="field"><label>Bin Label</label><input id="edit-bin-name" type="text"></div>
     <div class="field"><label>Location</label><input id="edit-bin-location" type="text"></div>
     <div class="field"><label>Color</label><input id="edit-bin-color" type="color"></div>
+    <div class="field">
+      <label>Nest inside another bin</label>
+      <select id="edit-bin-parent"></select>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:5px;line-height:1.4;">
+        Items don't move — the parent bin simply also shows everything stored in
+        the bins nested inside it.
+      </div>
+    </div>
     <button class="btn btn-primary btn-full mb-12" onclick="saveBinEdit()">Save Changes</button>
+    <div id="edit-bin-unpack-row" style="display:none;margin-bottom:12px;">
+      <button class="btn btn-secondary btn-full" onclick="unpackThisBin()"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#log-out"/></svg> Unpack from <span id="unpack-parent-name"></span></button>
+    </div>
     <hr class="divider">
-    <button class="btn btn-danger btn-full" onclick="openDeleteBinSheet()">🗑 Remove This Bin…</button>
+    <button class="btn btn-danger btn-full" onclick="openDeleteBinSheet()"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#trash-2"/></svg> Remove This Bin…</button>
   </div>
 </div>
 
@@ -873,13 +244,13 @@
     <div class="sheet-title">
       <span style="color:var(--danger)">Remove Bin</span>
       <button class="btn-icon" onclick="closeSheet('overlay-delete-bin')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg class="i" aria-hidden="true" style="width:16px;height:16px;"><use href="/static/icons/lucide.svg#x"/></svg>
       </button>
     </div>
 
-    <div style="background:#2d1515;border:1px solid #4a1f1f;border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+    <div style="background:var(--danger-soft);border:1px solid var(--danger-soft);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
       <div style="font-size:0.9rem;font-weight:700;color:var(--danger);margin-bottom:4px;">
-        ⚠️ You are about to remove "<span id="delete-bin-name"></span>"
+        <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#triangle-alert"/></svg> You are about to remove "<span id="delete-bin-name"></span>"
       </div>
       <div style="font-size:0.82rem;color:var(--muted);line-height:1.5;">
         This bin contains <strong id="delete-bin-count">0 items</strong> and its WLED settings will be lost. This cannot be undone.
@@ -889,11 +260,11 @@
     <div class="wled-section-title">What should happen to the contents?</div>
     <div class="effect-row mb-12" style="flex-direction:column;gap:8px;">
       <button class="effect-btn active" id="del-mode-checkout" onclick="setDeleteMode('checkout')" style="text-align:left;padding:12px;">
-        📤 <strong>Check items out of inventory</strong><br>
+        <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#log-out"/></svg> <strong>Check items out of inventory</strong><br>
         <span style="font-size:0.74rem;color:var(--muted);font-weight:400;">Items are preserved in the Checked Out list with their photos and tags. You can re-bin them later.</span>
       </button>
       <button class="effect-btn" id="del-mode-delete" onclick="setDeleteMode('delete')" style="text-align:left;padding:12px;">
-        🗑 <strong>Delete all contents permanently</strong><br>
+        <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#trash-2"/></svg> <strong>Delete all contents permanently</strong><br>
         <span style="font-size:0.74rem;color:var(--muted);font-weight:400;">Every item in this bin and its photos are permanently erased.</span>
       </button>
     </div>
@@ -916,7 +287,7 @@
     <div class="sheet-title">
       Add Item to <span id="add-item-bin-name" style="color:var(--accent2)"></span>
       <button class="btn-icon" onclick="closeSheet('overlay-add-item');stopCamera()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg class="i" aria-hidden="true" style="width:16px;height:16px;"><use href="/static/icons/lucide.svg#x"/></svg>
       </button>
     </div>
 
@@ -925,33 +296,41 @@
       <canvas id="camera-canvas"></canvas>
       <img id="photo-preview" alt="Preview">
       <div class="camera-placeholder" id="camera-placeholder">
-        <div style="font-size:2rem;margin-bottom:8px;">📷</div>
+        <div style="margin-bottom:8px;color:var(--muted);"><svg class="i i-xl" aria-hidden="true"><use href="/static/icons/lucide.svg#camera"/></svg></div>
         <div>Tap to start camera or<br>upload a photo</div>
       </div>
     </div>
 
     <div class="camera-controls">
       <button class="btn btn-secondary" style="flex:1" onclick="startCamera()" id="btn-start-cam">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        <svg class="i" aria-hidden="true" style="width:15px;height:15px;"><use href="/static/icons/lucide.svg#video"/></svg>
         Camera
       </button>
       <button class="btn btn-primary" style="flex:1" onclick="capturePhoto()" id="btn-capture" disabled>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg class="i" aria-hidden="true" style="width:15px;height:15px;"><use href="/static/icons/lucide.svg#aperture"/></svg>
         Capture
       </button>
       <label class="btn btn-secondary" style="flex:1;cursor:pointer;">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <svg class="i" aria-hidden="true" style="width:15px;height:15px;"><use href="/static/icons/lucide.svg#upload"/></svg>
         Upload
         <input type="file" accept="image/*" capture="environment" style="display:none" onchange="handleFileUpload(event)">
       </label>
+    </div>
+
+    <!-- Check whether this item already exists somewhere before adding a
+         duplicate. Uses the staged photo, so no second capture is needed. -->
+    <div id="match-check-row" style="display:none;margin-bottom:12px;">
+      <button class="btn btn-secondary btn-full" onclick="findMatchingItems()">
+        <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#search"/></svg> Find matching items already in inventory
+      </button>
     </div>
 
     <!-- Manual rotation, shown once a photo is staged. Orientation matters a
          lot for OCR and CLIP accuracy, so give the user a direct correction. -->
     <div id="rotate-controls" style="display:none;align-items:center;gap:8px;margin-bottom:12px;">
       <span style="font-size:0.76rem;color:var(--muted);">Orientation</span>
-      <button class="jog-btn" onclick="rotateStaged(-90)" title="Rotate left">↺ 90°</button>
-      <button class="jog-btn" onclick="rotateStaged(90)" title="Rotate right">↻ 90°</button>
+      <button class="jog-btn" onclick="rotateStaged(-90)" title="Rotate left"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#rotate-ccw"/></svg> 90°</button>
+      <button class="jog-btn" onclick="rotateStaged(90)" title="Rotate right"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#rotate-cw"/></svg> 90°</button>
       <span style="font-size:0.72rem;color:var(--muted);">Upright photos scan best</span>
     </div>
 
@@ -959,7 +338,7 @@
     <div class="schedule-panel" style="margin-bottom:14px;padding:10px 12px;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
         <div>
-          <div style="font-size:0.85rem;font-weight:600;">🔤 Read text on item (OCR)</div>
+          <div style="font-size:0.85rem;font-weight:600;"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#scan-text"/></svg> Read text on item (OCR)</div>
           <div style="font-size:0.74rem;color:var(--muted);margin-top:2px;">
             Extracts printed labels/part numbers. Used as the name if you leave it blank.
           </div>
@@ -970,6 +349,16 @@
 
     <div class="field"><label>Label (leave blank to auto-fill)</label><input id="item-label" type="text" placeholder="e.g. Phillips screwdriver"></div>
     <div class="field"><label>Notes (optional)</label><textarea id="item-notes" placeholder="Details, size, brand…"></textarea></div>
+    <!-- Optional barcode: saved as this item's local id (scan it later to find
+         it). The photo above is still analysed by CLIP and OCR as usual. -->
+    <div class="field">
+      <label>Barcode (optional)</label>
+      <div style="display:flex;gap:8px;">
+        <input id="item-barcode" type="text" placeholder="Scan or type the barcode on its packaging" autocomplete="off" inputmode="text" style="flex:1;">
+        <button type="button" class="btn btn-secondary" id="item-barcode-scan" style="flex-shrink:0;" title="Scan the barcode with the camera"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#camera"/></svg></button>
+      </div>
+      <div id="item-barcode-note" style="display:none;font-size:0.74rem;margin-top:5px;line-height:1.4;"></div>
+    </div>
 
     <button class="btn btn-primary btn-full" id="btn-save-item" onclick="saveItem()" disabled>Save Item</button>
   </div>
@@ -982,11 +371,20 @@
     <div class="sheet-title">
       Item Detail
       <button class="btn-icon" onclick="closeSheet('overlay-item-detail')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg class="i" aria-hidden="true" style="width:16px;height:16px;"><use href="/static/icons/lucide.svg#x"/></svg>
       </button>
     </div>
     <div id="detail-status-banner" style="display:none;font-size:0.78rem;font-weight:700;padding:7px 11px;border-radius:8px;margin-bottom:12px;"></div>
-    <img id="detail-photo" class="item-detail-photo">
+    <!-- Region OCR (E5): the wrapper hosts the drag-to-select box. -->
+    <div id="detail-photo-wrap" style="position:relative;">
+      <img id="detail-photo" class="item-detail-photo" draggable="false">
+      <div id="ocr-region-box" style="display:none;position:absolute;border:2px solid var(--accent2);background:rgba(60,196,217,0.18);border-radius:4px;pointer-events:none;"></div>
+    </div>
+    <div id="ocr-region-bar" style="display:none;align-items:center;gap:8px;margin:-4px 0 12px;">
+      <span id="ocr-region-hint" style="flex:1;font-size:0.78rem;color:var(--muted);">Drag a box around the text to read</span>
+      <button class="btn btn-secondary btn-sm" onclick="cancelRegionSelect()">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="ocr-region-go" onclick="readSelectedRegion(event)" disabled>Read</button>
+    </div>
     <div class="field"><label>Label</label><input id="detail-label" type="text"></div>
     <div class="field"><label>Notes</label><textarea id="detail-notes"></textarea></div>
     <div class="field" id="detail-bin-field">
@@ -995,15 +393,18 @@
     </div>
     <div id="detail-tags" class="tag-list mb-12"></div>
     <div id="detail-label-source" style="display:none;font-size:0.72rem;color:var(--muted);margin-top:-8px;margin-bottom:10px;"></div>
+    <div id="detail-codes"></div>
+    <div id="detail-plugin-sections"></div>
     <div id="detail-ocr-text" style="display:none;font-size:0.76rem;color:var(--accent2);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:10px;word-break:break-word;"></div>
     <div id="detail-retag-row" style="display:none" class="mb-12">
-      <button class="btn btn-secondary btn-sm" onclick="retagItem()">🔄 Re-run ML tagging</button>
-      <button class="btn btn-secondary btn-sm" onclick="runItemOcr()">🔤 Run OCR</button>
-      <button class="btn btn-secondary btn-sm" onclick="rotateSavedItem()">↻ Rotate</button>
+      <button class="btn btn-secondary btn-sm" onclick="retagItem(event)"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#refresh-cw"/></svg> Re-run ML tagging</button>
+      <button class="btn btn-secondary btn-sm" onclick="runItemOcr(event)"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#scan-text"/></svg> Run OCR</button>
+      <button class="btn btn-secondary btn-sm" onclick="rotateSavedItem(event)"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#rotate-cw"/></svg> Rotate</button>
+      <button class="btn btn-secondary btn-sm" onclick="startRegionSelect()"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#square-dashed"/></svg> Read text in area</button>
     </div>
     <div id="item-find-row" style="display:none;margin-bottom:10px;">
-      <button class="find-btn btn-full" style="width:100%;justify-content:center;" onclick="findBinFromItem()">
-        💡 Find This Item's Bin
+      <button class="find-btn btn-full" style="width:100%;justify-content:center;" onclick="findBinFromItem(event)">
+        <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#lightbulb"/></svg> Find This Item's Bin
       </button>
     </div>
 
@@ -1019,8 +420,8 @@
 
     <!-- Consume -->
     <div id="consume-row" style="display:none;">
-      <button class="btn btn-secondary btn-full" style="color:var(--warn);border:1px solid #4a3a0a;" onclick="consumeItem()">
-        🛒 Consume Item (move to shopping list)
+      <button class="btn btn-secondary btn-full" style="color:var(--warn);border:1px solid var(--warn-soft);" onclick="consumeItem()">
+        <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#shopping-cart"/></svg> Consume Item (move to shopping list)
       </button>
     </div>
   </div>
@@ -1033,9 +434,47 @@
     <div class="sheet-title">
       ML / Tagging Settings
       <button class="btn-icon" onclick="closeSheet('overlay-ml-settings')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg class="i" aria-hidden="true" style="width:16px;height:16px;"><use href="/static/icons/lucide.svg#x"/></svg>
       </button>
     </div>
+
+    <!-- PINNED: simplified view. First thing in the sheet because it changes
+         what everything below it looks like. -->
+    <div class="schedule-panel" style="border-color:var(--accent);background:var(--accent-soft);">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div>
+          <div style="font-size:0.9rem;font-weight:700;"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#eye"/></svg> Simplified View</div>
+          <div style="font-size:0.76rem;color:var(--muted);margin-top:3px;line-height:1.4;">
+            Hides advanced controls for fast, low-friction use. Search always uses
+            the ML model automatically.
+          </div>
+        </div>
+        <button id="set-simplified" onclick="toggleSimplified()" style="flex-shrink:0;font-size:0.8rem;font-weight:700;padding:8px 14px;border-radius:20px;border:none;cursor:pointer;white-space:nowrap;"></button>
+      </div>
+    </div>
+
+    <!-- Simplified-mode panel: only the essentials -->
+    <div id="simple-settings" style="display:none;">
+      <div class="schedule-panel mt-8">
+        <label>Processing</label>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
+          <div style="font-size:0.82rem;color:var(--muted);flex:1;">
+            Automatically process new items as they're added.
+          </div>
+          <button id="simple-autotag-btn" onclick="toggleAutoTag()" style="flex-shrink:0;font-size:0.8rem;font-weight:700;padding:6px 12px;border-radius:20px;border:none;cursor:pointer;white-space:nowrap;"></button>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="runAllPending()"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#play"/></svg> Run CLIP &amp; OCR on pending items</button>
+        <div id="simple-status" style="font-size:0.8rem;color:var(--muted);margin-top:10px;text-align:center;"></div>
+      </div>
+
+      <div class="schedule-panel mt-8" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div style="font-size:0.85rem;"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#lightbulb"/></svg> WLED Lighting</div>
+        <button class="btn btn-secondary btn-sm" onclick="closeSheet('overlay-ml-settings');openSheet('overlay-wled-global')">Configure</button>
+      </div>
+    </div>
+
+    <!-- Everything below is hidden in simplified mode -->
+    <div id="advanced-settings">
 
     <!-- Auto-tag toggle -->
     <div class="schedule-panel">
@@ -1054,7 +493,7 @@
       <label>Run Now</label>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div id="settings-queue-status" style="font-size:0.85rem;color:var(--muted);flex:1;"></div>
-        <button class="btn btn-secondary btn-sm" onclick="runAllTags()">▶ Tag All Untagged</button>
+        <button class="btn btn-secondary btn-sm" onclick="runAllTags()"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#play"/></svg> Tag All Untagged</button>
       </div>
     </div>
 
@@ -1107,8 +546,8 @@
 
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-primary btn-sm" onclick="saveOcrSettings()">Save OCR Settings</button>
-        <button class="btn btn-secondary btn-sm" onclick="rerunOcr('existing')">🔄 Re-run OCR (existing text)</button>
-        <button class="btn btn-secondary btn-sm" onclick="rerunOcr('all')">🔄 Re-run OCR (all items)</button>
+        <button class="btn btn-secondary btn-sm" onclick="rerunOcr('existing')"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#refresh-cw"/></svg> Re-run OCR (existing text)</button>
+        <button class="btn btn-secondary btn-sm" onclick="rerunOcr('all')"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#refresh-cw"/></svg> Re-run OCR (all items)</button>
       </div>
       <div style="font-size:0.72rem;color:var(--muted);margin-top:8px;line-height:1.4;">
         Re-run after changing truncation so stored tags pick up the new limit.
@@ -1130,18 +569,51 @@
       </div>
     </div>
 
+    <!-- Search sensitivity (C5) -->
+    <div class="schedule-panel mt-8">
+      <label>Search Sensitivity</label>
+      <div style="font-size:0.82rem;color:var(--muted);line-height:1.4;margin-bottom:8px;">
+        Minimum similarity for a semantic match. Lower shows more (and looser)
+        results. Text searches score far lower than photo matches, so each has
+        its own setting. Defaults: text 0.18, photo 0.55.
+      </div>
+      <div class="time-row">
+        <span style="font-size:0.8rem;color:var(--muted);min-width:44px;">Text</span>
+        <input type="number" id="set-text-threshold" min="0.05" max="0.95" step="0.01" value="0.18" style="width:80px;">
+        <span style="font-size:0.8rem;color:var(--muted);min-width:44px;">Photo</span>
+        <input type="number" id="set-image-threshold" min="0.05" max="0.95" step="0.01" value="0.55" style="width:80px;">
+        <button class="btn btn-primary btn-sm" onclick="saveThresholds()">Save</button>
+      </div>
+    </div>
+
+    <!-- Name priority (configurable C1 precedence) -->
+    <div class="schedule-panel mt-8">
+      <label>Name Priority</label>
+      <div style="font-size:0.82rem;color:var(--muted);line-height:1.4;margin-bottom:8px;">
+        When something proposes a name for an item, it replaces the current name
+        only if its source is at least as high in this list. Highest wins.
+        Renaming an item yourself in the app always applies.
+      </div>
+      <div id="naming-order"></div>
+      <div class="time-row" style="margin-top:6px;">
+        <button class="btn btn-secondary btn-sm" onclick="resetNaming()">Reset to default</button>
+        <span id="naming-default-note" style="font-size:0.78rem;color:var(--muted);"></span>
+      </div>
+    </div>
+
     <!-- Dictionaries -->
     <div class="schedule-panel mt-8">
       <label>Dictionaries</label>
       <div id="dict-summary" style="font-size:0.82rem;color:var(--muted);margin-bottom:8px;">Loading…</div>
       <div id="dict-list" style="max-height:140px;overflow-y:auto;font-size:0.76rem;margin-bottom:8px;"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-secondary btn-sm" onclick="loadDictionaries()">↻ Refresh</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadDictionaries()"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#refresh-cw"/></svg> Refresh</button>
         <button class="btn btn-secondary btn-sm" onclick="reloadDictionaries()">⟳ Reload from disk</button>
       </div>
       <div style="font-size:0.72rem;color:var(--muted);margin-top:8px;line-height:1.4;">
-        Edit files in the <code>dictionaries/</code> folder. Rename a file to end
-        in <code>.off</code> to disable that category.
+        Edit files in the <code>dictionaries/</code> folder: <code>base_list</code>,
+        <code>electronics_shop_list</code> and <code>custom_list</code>. Rename a file to
+        end in <code>.off</code> to disable it.
       </div>
     </div>
 
@@ -1152,19 +624,28 @@
         Mine words from names you typed and text OCR read, then review which are
         worth adding to the dictionary.
       </div>
-      <button class="btn btn-primary btn-sm" onclick="openVocabReview()">🔍 Analyze Words</button>
+      <button class="btn btn-primary btn-sm" onclick="openVocabReview()"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#search"/></svg> Analyze Words</button>
+    </div>
+
+    <!-- Plugins live in their own tab, each with its settings nested under it. -->
+    <div class="schedule-panel mt-8" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div style="font-size:0.85rem;"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#puzzle"/></svg> Plugins and their settings</div>
+      <button class="btn btn-secondary btn-sm" onclick="closeSheet('overlay-ml-settings');showView('plugins')">Open</button>
     </div>
 
     <!-- WLED Link -->
     <div class="schedule-panel mt-8" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-      <div style="font-size:0.85rem;">💡 WLED LED Integration</div>
+      <div style="font-size:0.85rem;"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#lightbulb"/></svg> WLED LED Integration</div>
       <button class="btn btn-secondary btn-sm" onclick="closeSheet('overlay-ml-settings');openSheet('overlay-wled-global')">Configure</button>
     </div>
 
-    <!-- Memory info -->
+    </div><!-- /advanced-settings -->
+
+    <!-- Model status stays visible in BOTH modes — the user asked for current
+         model loading status to remain available in simplified view. -->
     <div class="schedule-panel mt-8" style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
       <div>
-        <div style="font-size:0.82rem;font-weight:600;">CLIP Model Memory</div>
+        <div style="font-size:0.82rem;font-weight:600;">Model Status</div>
         <div id="clip-mem-status" style="font-size:0.78rem;color:var(--muted);margin-top:2px;"></div>
       </div>
       <button id="unload-clip-btn" class="btn btn-secondary btn-sm" onclick="unloadClip()" style="display:none;">Unload Now</button>
@@ -1180,7 +661,7 @@
     <div class="sheet-title">
       WLED Integration
       <button class="btn-icon" onclick="closeSheet('overlay-wled-global')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg class="i" aria-hidden="true" style="width:16px;height:16px;"><use href="/static/icons/lucide.svg#x"/></svg>
       </button>
     </div>
     <div class="schedule-panel">
@@ -1211,34 +692,64 @@
   <div class="sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">
-      <span>💡 WLED — <span id="wled-bin-name"></span></span>
+      <span><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#lightbulb"/></svg> WLED — <span id="wled-bin-name"></span></span>
       <button class="btn-icon" onclick="closeSheet('overlay-wled-bin');wledPreviewOff()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg class="i" aria-hidden="true" style="width:16px;height:16px;"><use href="/static/icons/lucide.svg#x"/></svg>
       </button>
     </div>
 
-    <!-- Connection -->
+    <!-- Controller selection -->
     <div class="wled-section">
-      <div class="wled-section-title">WLED Device</div>
+      <div class="wled-section-title">Controller</div>
       <div style="display:flex;gap:8px;align-items:center;">
-        <input type="text" id="wled-bin-ip" placeholder="192.168.1.100" style="flex:1;">
+        <select id="wled-bin-device" style="flex:1;" onchange="onBinDeviceChange()"></select>
         <button class="btn btn-secondary btn-sm" onclick="pingWledBin()">Ping</button>
       </div>
       <div id="wled-bin-ping-result" style="font-size:0.78rem;margin-top:5px;"></div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="openDeviceManager()"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#settings"/></svg> Manage controllers…</button>
+      </div>
+      <!-- Kept for bins configured before the device registry existed. -->
+      <div id="wled-legacy-ip-row" style="display:none;margin-top:8px;">
+        <label style="font-size:0.72rem;color:var(--muted);">Direct IP (legacy)</label>
+        <input type="text" id="wled-bin-ip" placeholder="192.168.1.100" style="width:100%;">
+      </div>
+    </div>
+
+    <!-- 2D zone editor — only shown when the controller reports a matrix -->
+    <div class="wled-section" id="matrix-zone-section" style="display:none;">
+      <div class="wled-section-title">Panel Zone — <span id="matrix-dims"></span></div>
+      <div id="matrix-grid" style="display:grid;gap:2px;background:#0a0a0f;padding:8px;border-radius:8px;margin-bottom:8px;overflow:auto;max-height:220px;"></div>
+      <div class="jog-row">
+        <span class="jog-label">Position</span>
+        <button class="jog-btn" onclick="matrixMove(-1,0)" title="Left"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#chevron-left"/></svg></button>
+        <button class="jog-btn" onclick="matrixMove(1,0)" title="Right"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#chevron-right"/></svg></button>
+        <button class="jog-btn" onclick="matrixMove(0,-1)" title="Up"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#chevron-up"/></svg></button>
+        <button class="jog-btn" onclick="matrixMove(0,1)" title="Down"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#chevron-down"/></svg></button>
+        <span id="matrix-pos" style="font-size:0.76rem;color:var(--muted);"></span>
+      </div>
+      <div class="jog-row">
+        <span class="jog-label">Size</span>
+        <button class="jog-btn" onclick="matrixResize(-1,0)">−W</button>
+        <button class="jog-btn" onclick="matrixResize(1,0)">+W</button>
+        <button class="jog-btn" onclick="matrixResize(0,-1)">−H</button>
+        <button class="jog-btn" onclick="matrixResize(0,1)">+H</button>
+        <span id="matrix-size" style="font-size:0.76rem;color:var(--muted);"></span>
+      </div>
     </div>
 
     <!-- LED strip visualizer -->
-    <div class="wled-section">
+    <div class="wled-section" id="strip-zone-section">
       <div class="wled-section-title">LED Zone — <span id="wled-strip-label">LEDs 0–4 (5 LEDs)</span></div>
       <div id="wled-led-strip" class="led-strip"></div>
 
       <!-- Jog controls -->
       <div class="jog-row">
         <span class="jog-label">Position</span>
-        <button class="jog-btn" onclick="jogStrip(-10)">◀◀</button>
-        <button class="jog-btn" onclick="jogStrip(-1)">◀</button>
-        <button class="jog-btn" onclick="jogStrip(1)">▶</button>
-        <button class="jog-btn" onclick="jogStrip(10)">▶▶</button>
+        <button class="jog-btn" onclick="jogStrip(-10)" title="Back 10"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#chevrons-left"/></svg></button>
+        <button class="jog-btn" onclick="jogStrip(-1)" title="Back 1"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#chevron-left"/></svg></button>
+        <button class="jog-btn" onclick="jogStrip(1)" title="Forward 1"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#chevron-right"/></svg></button>
+        <button class="jog-btn" onclick="jogStrip(10)" title="Forward 10"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#chevrons-right"/></svg></button>
       </div>
       <div class="jog-row">
         <span class="jog-label">Zone Size</span>
@@ -1256,7 +767,7 @@
         <input type="color" id="wled-bin-color" value="#ffffff" style="width:52px;height:42px;padding:2px;border-radius:6px;cursor:pointer;" onchange="sendPreview()">
         <div style="flex:1;">
           <div class="brightness-row">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg class="i" aria-hidden="true" style="width:14px;height:14px;"><use href="/static/icons/lucide.svg#sun"/></svg>
             <input type="range" id="wled-bin-brightness" min="10" max="255" value="128" oninput="updateBrightnessLabel();sendPreview()">
             <span id="wled-brightness-label" style="font-size:0.78rem;color:var(--muted);min-width:28px;text-align:right;">128</span>
           </div>
@@ -1269,41 +780,12 @@
       <div class="wled-section-title">Effect</div>
       <div class="effect-row">
         <button class="effect-btn active" id="effect-solid" onclick="setEffect('solid')">
-          ▬ Solid
+          <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#rectangle-horizontal"/></svg> Solid
         </button>
         <button class="effect-btn" id="effect-pulse" onclick="setEffect('pulse')">
-          ◉ Pulse
-        </button>
-        <button class="effect-btn" id="effect-chase" onclick="setEffect('chase')">
-          ➤ Chase
+          <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#circle-dot"/></svg> Pulse
         </button>
       </div>
-    </div>
-
-    <!-- Chase config (only shown when Chase effect is selected) -->
-    <div class="wled-section" id="chase-config" style="display:none;">
-      <div class="wled-section-title">Chase Settings</div>
-      <div class="jog-row">
-        <span class="jog-label">Start LED</span>
-        <button class="jog-btn" onclick="chaseAdjust('start', -10)">◀◀</button>
-        <button class="jog-btn" onclick="chaseAdjust('start', -1)">◀</button>
-        <span id="chase-start-val" style="min-width:32px;text-align:center;font-weight:700;">0</span>
-        <button class="jog-btn" onclick="chaseAdjust('start', 1)">▶</button>
-        <button class="jog-btn" onclick="chaseAdjust('start', 10)">▶▶</button>
-      </div>
-      <div class="jog-row">
-        <span class="jog-label">Comet Size</span>
-        <button class="jog-btn" onclick="chaseAdjust('size', -1)">−</button>
-        <span id="chase-size-val" style="min-width:32px;text-align:center;font-weight:700;">3</span>
-        <button class="jog-btn" onclick="chaseAdjust('size', 1)">+</button>
-        <span style="font-size:0.74rem;color:var(--muted);">LEDs</span>
-      </div>
-      <div class="brightness-row" style="margin-top:8px;">
-        <span class="jog-label">Speed</span>
-        <input type="range" id="chase-speed" min="5" max="200" value="50" oninput="chaseSpeedInput()">
-        <span id="chase-speed-val" style="font-size:0.78rem;color:var(--muted);min-width:60px;text-align:right;">50 ms/LED</span>
-      </div>
-      <button class="btn btn-secondary btn-sm" style="margin-top:10px;" onclick="previewChase()">➤ Preview Chase</button>
     </div>
 
     <!-- Duration -->
@@ -1333,9 +815,9 @@
   <div class="sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">
-      🛒 Shopping List
+      <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#shopping-cart"/></svg> Shopping List
       <button class="btn-icon" onclick="closeSheet('overlay-shopping-list')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg class="i" aria-hidden="true" style="width:16px;height:16px;"><use href="/static/icons/lucide.svg#x"/></svg>
       </button>
     </div>
     <div id="shopping-list-items"></div>
@@ -1349,22 +831,17 @@
     <div class="sheet-title">
       Restock <span id="restock-item-label" style="color:var(--accent2)"></span>
       <button class="btn-icon" onclick="closeSheet('overlay-restock')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg class="i" aria-hidden="true" style="width:16px;height:16px;"><use href="/static/icons/lucide.svg#x"/></svg>
       </button>
     </div>
 
     <img id="restock-photo" class="item-detail-photo">
 
-    <div class="effect-row mb-12">
-      <button class="effect-btn active" id="restock-mode-same" onclick="setRestockMode('same')">
-        ↩️ Same Bin & Photo
-      </button>
-      <button class="effect-btn" id="restock-mode-update" onclick="setRestockMode('update')">
-        ✏️ Update Details
-      </button>
-    </div>
+    <!-- One form (backlog D4): pre-filled from the stored item. Press Restock
+         unchanged to put it back as it was; edit any field to change it. -->
+    <div id="restock-hint" class="text-sm muted mb-12"></div>
 
-    <div id="restock-update-fields" style="display:none;">
+    <div id="restock-update-fields">
       <div class="field"><label>Label</label><input id="restock-label" type="text"></div>
       <div class="field"><label>Notes</label><textarea id="restock-notes"></textarea></div>
       <div class="field">
@@ -1374,18 +851,14 @@
       <div class="field">
         <label>Replace Photo (optional — will re-run ML tagging)</label>
         <label class="btn btn-secondary btn-full" style="cursor:pointer;">
-          📷 Choose New Photo
+          <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#camera"/></svg> Choose New Photo
           <input type="file" accept="image/*" capture="environment" style="display:none" onchange="handleRestockPhotoUpload(event)">
         </label>
         <div id="restock-photo-status" class="text-sm muted mt-8"></div>
       </div>
     </div>
 
-    <div id="restock-same-note" class="text-sm muted mb-12">
-      Will return to its original bin <strong id="restock-origin-bin-name"></strong> using the saved photo and tags, and light up the bin if WLED is configured.
-    </div>
-
-    <button class="btn btn-primary btn-full" onclick="confirmRestock()">✓ Restock Item</button>
+    <button class="btn btn-primary btn-full" onclick="confirmRestock()"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#check"/></svg> Restock Item</button>
   </div>
 </div>
 
@@ -1396,7 +869,7 @@
     <div class="sheet-title">
       Vocabulary Review
       <button class="btn-icon" onclick="closeSheet('overlay-vocab')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg class="i" aria-hidden="true" style="width:16px;height:16px;"><use href="/static/icons/lucide.svg#x"/></svg>
       </button>
     </div>
 
@@ -1430,1660 +903,123 @@
     <div id="vocab-words" style="display:flex;flex-wrap:wrap;gap:6px;max-height:320px;overflow-y:auto;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;"></div>
 
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="btn btn-primary" style="flex:1" onclick="addVocabWords()">➕ Add to Dictionary</button>
-      <button class="btn btn-secondary" onclick="exportVocabWords()">⬇ Export Wordlist</button>
+      <button class="btn btn-primary" style="flex:1" onclick="addVocabWords()"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#plus"/></svg> Add to Dictionary</button>
+      <button class="btn btn-secondary" onclick="exportVocabWords()"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#download"/></svg> Export Wordlist</button>
     </div>
     <div style="font-size:0.72rem;color:var(--muted);margin-top:8px;">
-      Added words go to <code>dictionaries/98_reviewed.txt</code> and take effect immediately.
+      Added words go to <code>dictionaries/custom_list.txt</code> and take effect immediately.
     </div>
+
+    <!-- Vocabulary management (E3) — rendered by loadVocabManager() in vocab.js -->
+    <div class="wled-section" style="margin-top:18px;">
+      <div class="wled-section-title">Manage vocabulary</div>
+      <div id="vm-summary" style="font-size:0.78rem;color:var(--muted);margin-bottom:8px;"></div>
+      <div style="font-weight:600;font-size:0.85rem;margin-top:6px;">Review queue <span class="muted" style="font-weight:400;">— names you typed</span></div>
+      <div id="vm-candidates"></div>
+      <div style="font-weight:600;font-size:0.85rem;margin-top:14px;">Custom list</div>
+      <div id="vm-custom"></div>
+      <div style="font-weight:600;font-size:0.85rem;margin:14px 0 6px;">Possible duplicates</div>
+      <div id="vm-dupes"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Matching Items Sheet (reverse image search from Add Item) -->
+<div id="overlay-matches" class="overlay" onclick="closeAllSheets(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#search"/></svg> Matching Items
+      <button class="btn-icon" onclick="closeSheet('overlay-matches')">
+        <svg class="i" aria-hidden="true" style="width:16px;height:16px;"><use href="/static/icons/lucide.svg#x"/></svg>
+      </button>
+    </div>
+    <div id="matches-status" class="text-sm muted mb-12"></div>
+    <div id="matches-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════ BULK ADD ═══════════ -->
+<!-- Deliberately minimal: a live viewfinder and two big buttons. No label, no
+     notes, no options. The point is to empty a box quickly and let CLIP/OCR do
+     the logging; the user names and tags things later. -->
+<div id="overlay-bulk" class="overlay" style="align-items:stretch;">
+  <div style="background:var(--bg);width:100%;max-width:600px;margin:0 auto;display:flex;flex-direction:column;height:100dvh;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
+      <button class="btn-icon" onclick="closeBulkAdd()">
+        <svg class="i" aria-hidden="true" style="width:18px;height:18px;"><use href="/static/icons/lucide.svg#x"/></svg>
+      </button>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:0.95rem;"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#zap"/></svg> Bulk Add</div>
+        <div style="font-size:0.75rem;color:var(--muted);" id="bulk-bin-name"></div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div id="bulk-count" style="font-size:1.4rem;font-weight:800;color:var(--accent2);line-height:1;">0</div>
+        <div style="font-size:0.68rem;color:var(--muted);">captured</div>
+      </div>
+    </div>
+
+    <!-- Viewfinder -->
+    <div style="flex:1;position:relative;background:#000;overflow:hidden;min-height:0;">
+      <video id="bulk-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;"></video>
+      <canvas id="bulk-canvas" style="display:none;"></canvas>
+
+      <!-- Flash confirmation overlay after each capture -->
+      <div id="bulk-flash" style="position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .18s;"></div>
+
+      <!-- Last capture thumbnail, so you can confirm the shot landed -->
+      <img id="bulk-thumb" style="display:none;position:absolute;bottom:10px;left:10px;width:64px;height:64px;object-fit:cover;border-radius:8px;border:2px solid var(--accent);box-shadow:0 2px 12px rgba(0,0,0,.6);">
+
+      <div id="bulk-status" style="position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);color:#fff;font-size:0.78rem;padding:5px 12px;border-radius:20px;display:none;white-space:nowrap;"></div>
+
+      <div id="bulk-camera-error" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;flex-direction:column;padding:24px;text-align:center;color:var(--muted);">
+        <div style="margin-bottom:12px;color:var(--muted);"><svg class="i i-xl" aria-hidden="true"><use href="/static/icons/lucide.svg#camera"/></svg></div>
+        <div id="bulk-error-msg" style="font-size:0.9rem;line-height:1.5;"></div>
+      </div>
+    </div>
+
+    <!-- The two capture buttons -->
+    <div style="display:flex;gap:10px;padding:14px;flex-shrink:0;border-top:1px solid var(--border);">
+      <button id="bulk-capture-btn" onclick="bulkCapture(false)"
+        style="flex:1;padding:20px 10px;border-radius:14px;border:none;background:var(--accent);color:var(--on-accent);font-size:1rem;font-weight:800;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+        <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#aperture"/></svg> Capture
+      </button>
+      <button id="bulk-capture-ocr-btn" onclick="bulkCapture(true)"
+        style="flex:1;padding:20px 10px;border-radius:14px;border:none;background:var(--accent-line);color:var(--accent2);font-size:1rem;font-weight:800;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+        <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#scan-text"/></svg> Capture + OCR
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- WLED Controller Manager -->
+<div id="overlay-devices" class="overlay" onclick="closeAllSheets(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      <svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#lightbulb"/></svg> WLED Controllers
+      <button class="btn-icon" onclick="closeSheet('overlay-devices')">
+        <svg class="i" aria-hidden="true" style="width:16px;height:16px;"><use href="/static/icons/lucide.svg#x"/></svg>
+      </button>
+    </div>
+    <div class="schedule-panel mb-12">
+      <label>Add a controller</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input type="text" id="new-device-name" placeholder="Name e.g. Garage shelf" style="flex:2;min-width:140px;">
+        <input type="text" id="new-device-ip" placeholder="192.168.1.100" style="flex:1;min-width:120px;">
+        <button class="btn btn-primary btn-sm" onclick="addDevice()">Add</button>
+      </div>
+      <div id="add-device-result" style="font-size:0.78rem;margin-top:6px;"></div>
+    </div>
+    <div id="device-list"></div>
   </div>
 </div>
 
 <!-- Toast -->
 <div id="toast"></div>
 
-<script>
-// ── STATE ─────────────────────────────────────────────────────────────────────
-let bins = [];
-let currentBinId = null;
-let currentItemId = null;
-let capturedBlob = null;
-let cameraStream = null;
-let searchTimer = null;
-let invBinFilter = null;   // null = all
-
-// ── BOOT ──────────────────────────────────────────────────────────────────────
-(async () => {
-  await loadBins();
-  await loadWledGlobal();
-  await loadOcrSettings();
-  renderBinsView();
-  updateCartBadge();
-  fetch('/api/warmup', {method:'POST'});
-  pollClipStatus();
-})();
-
-let _autoTag      = true;
-let _scheduleHour = null;
-let _scheduleMins = 0;
-
-function pollClipStatus() {
-  fetch('/api/status').then(r=>r.json()).then(d => {
-    const badge   = document.getElementById('clip-badge');
-    const qctrls  = document.getElementById('queue-controls');
-    const qbadge  = document.getElementById('queue-badge');
-    const runBtn  = document.getElementById('runtags-btn');
-    const autoBtn = document.getElementById('autotag-btn');
-
-    _autoTag      = d.auto_tag;
-    _scheduleHour = d.schedule_hour;
-    _scheduleMins = d.schedule_min;
-
-    const busy = d.worker_running || d.queue_size > 0 || d.tagging_now;
-
-    if (busy || d.clip_ready) {
-      qctrls.style.display = 'flex';
-    }
-
-    if (busy) {
-      // ── Working: show "N of M" plus an ETA when we can estimate one ──────
-      const p = d.progress || {};
-      const done  = p.done  || 0;
-      const total = p.total || 0;
-      let label = '⚙ ';
-      // Name whichever engine(s) are actually loaded right now.
-      if (d.ocr_ready && d.clip_ready)      label += 'Tagging+OCR ';
-      else if (d.ocr_ready)                  label += 'OCR ';
-      else                                   label += 'Tagging ';
-      if (total > 0) label += `${done} of ${total}`;
-      else           label += `(${d.queue_size} left)`;
-      if (p.eta_sec != null && p.eta_sec > 0) label += ` · ~${fmtEta(p.eta_sec)}`;
-
-      badge.textContent = label;
-      badge.className   = 'clip-status ready';
-
-      qbadge.textContent   = total > 0 ? `${Math.round((done/total)*100)}%` : `${d.queue_size} left`;
-      qbadge.style.display = 'inline-block';
-      runBtn.style.display = 'none';
-      autoBtn.textContent  = '⚙ Running…';
-      autoBtn.style.background = '#1a2d1a';
-      autoBtn.style.color = '#34d399';
-    } else if (d.clip_ready) {
-      // loaded but idle
-      badge.textContent = '✓ ML Ready (idle)';
-      badge.className   = 'clip-status ready';
-      qbadge.style.display = 'none';
-      updateAutoTagBtn();
-    } else if (d.clip_loading) {
-      badge.textContent = '⏳ Loading ML…';
-      badge.className   = 'clip-status loading';
-      qbadge.style.display = 'none';
-    } else {
-      // unloaded / not running
-      badge.textContent = '💤 ML Unloaded';
-      badge.className   = 'clip-status loading';
-      qbadge.style.display = 'none';
-      qctrls.style.display = 'flex';
-      updateAutoTagBtn();
-    }
-
-    // update settings sheet if open
-    updateSettingsSheet(d);
-
-    const interval = busy ? 2000 : (d.clip_ready ? 10000 : 15000);
-    setTimeout(pollClipStatus, interval);
-  }).catch(() => setTimeout(pollClipStatus, 4000));
-}
-
-function updateAutoTagBtn() {
-  const btn    = document.getElementById('autotag-btn');
-  const runBtn = document.getElementById('runtags-btn');
-  const sbtn   = document.getElementById('settings-autotag-btn');
-  if (_autoTag) {
-    if (btn) { btn.textContent = '🟢 Auto-tag ON'; btn.style.background='#0d2d20'; btn.style.color='#34d399'; }
-    if (sbtn){ sbtn.textContent= '🟢 Auto-tag ON'; sbtn.style.background='#0d2d20'; sbtn.style.color='#34d399'; }
-    if (runBtn) runBtn.style.display = 'none';
-  } else {
-    if (btn) { btn.textContent = '⏸ Auto-tag OFF'; btn.style.background='#2d1a0a'; btn.style.color='#fbbf24'; }
-    if (sbtn){ sbtn.textContent= '⏸ Auto-tag OFF'; sbtn.style.background='#2d1a0a'; sbtn.style.color='#fbbf24'; }
-    if (runBtn) runBtn.style.display = 'inline-block';
-  }
-}
-
-// Format a seconds count into a compact human string for the banner.
-function fmtEta(sec) {
-  if (sec < 60) return `${sec}s left`;
-  const m = Math.floor(sec / 60), s = sec % 60;
-  if (m < 60) return s ? `${m}m ${s}s left` : `${m}m left`;
-  const h = Math.floor(m / 60);
-  return `${h}h ${m % 60}m left`;
-}
-
-// ── OCR: per-item toggle on the Add Item screen ─────────────────────────────
-let _itemOcrOn   = false;   // state of the toggle for the item being added
-let _ocrSettings = { ocr_default_on:false, ocr_as_tags:true, ocr_truncate:true, ocr_truncate_len:255 };
-
-function updateItemOcrBtn() {
-  const b = document.getElementById('item-ocr-toggle');
-  if (!b) return;
-  if (_itemOcrOn) {
-    b.textContent = '🟢 ON';
-    b.style.background = '#0d2d20'; b.style.color = '#34d399';
-  } else {
-    b.textContent = '⚫ OFF';
-    b.style.background = 'var(--border)'; b.style.color = 'var(--muted)';
-  }
-}
-
-function toggleItemOcr() {
-  _itemOcrOn = !_itemOcrOn;
-  updateItemOcrBtn();
-}
-
-// ── OCR: settings sheet ─────────────────────────────────────────────────────
-async function loadOcrSettings() {
-  try {
-    _ocrSettings = await api('/api/settings/ocr');
-    renderOcrSettings();
-  } catch(e) {}
-}
-
-function styleToggle(id, on) {
-  const b = document.getElementById(id);
-  if (!b) return;
-  b.textContent = on ? '🟢 ON' : '⚫ OFF';
-  b.style.background = on ? '#0d2d20' : 'var(--border)';
-  b.style.color      = on ? '#34d399' : 'var(--muted)';
-}
-
-function renderOcrSettings() {
-  styleToggle('set-ocr-default', _ocrSettings.ocr_default_on);
-  styleToggle('set-ocr-tags',    _ocrSettings.ocr_as_tags);
-  styleToggle('set-ocr-trunc',   _ocrSettings.ocr_truncate);
-  const lenEl = document.getElementById('set-ocr-trunc-len');
-  if (lenEl) lenEl.value = _ocrSettings.ocr_truncate_len;
-  // The length field is only meaningful when truncation is enabled.
-  const row = document.getElementById('ocr-trunc-len-row');
-  if (row) row.style.opacity = _ocrSettings.ocr_truncate ? '1' : '0.4';
-}
-
-function toggleOcrSetting(key) {
-  _ocrSettings[key] = !_ocrSettings[key];
-  renderOcrSettings();
-}
-
-async function saveOcrSettings() {
-  const len = parseInt(document.getElementById('set-ocr-trunc-len').value) || 255;
-  try {
-    _ocrSettings = await api('/api/settings/ocr', {method:'POST', body: JSON.stringify({
-      ocr_default_on:   _ocrSettings.ocr_default_on,
-      ocr_as_tags:      _ocrSettings.ocr_as_tags,
-      ocr_truncate:     _ocrSettings.ocr_truncate,
-      ocr_truncate_len: Math.max(1, Math.min(255, len)),
-    })});
-    renderOcrSettings();
-    toast('OCR settings saved');
-  } catch(e) { toast(e.message, true); }
-}
-
-async function rerunOcr(scope) {
-  const msg = scope === 'all'
-    ? 'Re-run OCR on EVERY item? This can take a while.'
-    : 'Re-run OCR on items that already have text?';
-  if (!confirm(msg)) return;
-  try {
-    const r = await api('/api/settings/rerun-ocr', {method:'POST', body: JSON.stringify({scope})});
-    toast(`${r.queued} item${r.queued!==1?'s':''} queued for OCR`);
-    pollClipStatus();
-  } catch(e) { toast(e.message, true); }
-}
-
-// ── Keep-alive setting ──────────────────────────────────────────────────────
-async function saveKeepalive() {
-  const v = parseInt(document.getElementById('set-keepalive').value);
-  if (isNaN(v) || v < 0 || v > 3600) { toast('Enter 0–3600 seconds', true); return; }
-  try {
-    await api('/api/settings/ocr', {method:'POST', body: JSON.stringify({model_keepalive_sec: v})});
-    toast(v === 0 ? 'Models will unload immediately' : `Models stay warm for ${v}s`);
-  } catch(e) { toast(e.message, true); }
-}
-
-// ── Dictionaries ────────────────────────────────────────────────────────────
-async function loadDictionaries() {
-  const sum = document.getElementById('dict-summary');
-  const list = document.getElementById('dict-list');
-  if (!sum) return;
-  sum.textContent = 'Loading…';
-  try {
-    const d = await api('/api/dictionaries');
-    const on = d.files.filter(f => f.enabled).length;
-    sum.textContent = `${d.total} terms from ${on} enabled file${on!==1?'s':''} · ${d.active} active (incl. learned)`;
-    list.innerHTML = d.files.map(f => `
-      <div style="display:flex;justify-content:space-between;padding:3px 0;${f.enabled?'':'opacity:.45'}">
-        <span>${f.enabled ? '✓' : '✗'} ${esc(f.file)}</span>
-        <span style="color:var(--muted)">${f.terms}</span>
-      </div>`).join('');
-    document.getElementById('set-keepalive').value = _ocrSettings.model_keepalive_sec ?? 60;
-  } catch(e) { sum.textContent = 'Could not load dictionaries'; }
-}
-
-async function reloadDictionaries() {
-  try {
-    const r = await api('/api/dictionaries/reload', {method:'POST', body:'{}'});
-    toast(`Reloaded — ${r.active} active terms`);
-    loadDictionaries();
-  } catch(e) { toast(e.message, true); }
-}
-
-// ── Vocabulary review ───────────────────────────────────────────────────────
-let _vocabSource = 'both';
-let _vocabWords  = [];   // [{word,count,items,known,selected}]
-
-function setVocabSource(s) {
-  _vocabSource = s;
-  ['both','manual','ocr'].forEach(k =>
-    document.getElementById('vocab-src-'+k).classList.toggle('active', k === s));
-}
-
-function openVocabReview() {
-  closeSheet('overlay-ml-settings');
-  openSheet('overlay-vocab');
-  runVocabAnalysis();
-}
-
-async function runVocabAnalysis() {
-  const min = parseInt(document.getElementById('vocab-min').value) || 2;
-  const sum = document.getElementById('vocab-summary');
-  sum.textContent = 'Analyzing…';
-  try {
-    const r = await api(`/api/vocab/analyze?source=${_vocabSource}&min=${min}`);
-    _vocabWords = r.words;
-    sum.textContent = `${r.unique} unique words from ${r.scanned} items · ${r.preselected} pre-selected (used ≥${r.min}×)`;
-    renderVocabWords();
-  } catch(e) { sum.textContent = 'Analysis failed: ' + e.message; }
-}
-
-function renderVocabWords() {
-  const box = document.getElementById('vocab-words');
-  if (!_vocabWords.length) {
-    box.innerHTML = '<div class="muted text-sm">No words found. Add some items with typed names or OCR text first.</div>';
-    return;
-  }
-  // Chips are sorted most-frequent first. Already-known words are dimmed and
-  // can't be selected — adding them again would be a no-op.
-  box.innerHTML = _vocabWords.map((w, i) => {
-    if (w.known) {
-      return `<span style="font-size:0.74rem;padding:4px 9px;border-radius:6px;background:var(--border);color:var(--muted);opacity:.6;"
-        title="Already in dictionary">${esc(w.word)} · ${w.count}</span>`;
-    }
-    const sel = w.selected;
-    return `<span onclick="toggleVocabWord(${i})" style="cursor:pointer;font-size:0.74rem;padding:4px 9px;border-radius:6px;
-      background:${sel ? 'var(--accent)' : 'var(--card)'};color:${sel ? '#fff' : 'var(--text)'};
-      border:1px solid ${sel ? 'var(--accent)' : 'var(--border)'};"
-      title="${w.items} item(s)">${sel ? '✓ ' : ''}${esc(w.word)} · ${w.count}</span>`;
-  }).join('');
-}
-
-function toggleVocabWord(i) {
-  if (_vocabWords[i].known) return;
-  _vocabWords[i].selected = !_vocabWords[i].selected;
-  renderVocabWords();
-}
-
-function vocabSelectAll(on) {
-  _vocabWords.forEach(w => { if (!w.known) w.selected = on; });
-  renderVocabWords();
-}
-
-function vocabSelectThreshold() {
-  const min = parseInt(document.getElementById('vocab-min').value) || 2;
-  _vocabWords.forEach(w => { w.selected = !w.known && w.count >= min; });
-  renderVocabWords();
-}
-
-function selectedVocab() {
-  return _vocabWords.filter(w => w.selected && !w.known).map(w => w.word);
-}
-
-async function addVocabWords() {
-  const words = selectedVocab();
-  if (!words.length) { toast('No words selected', true); return; }
-  if (!confirm(`Add ${words.length} word(s) to the dictionary?`)) return;
-  try {
-    const r = await api('/api/vocab/add-words', {method:'POST', body: JSON.stringify({words})});
-    toast(`Added ${r.added} word(s) — ${r.active} active terms`);
-    runVocabAnalysis();   // refresh so added words now show as "known"
-  } catch(e) { toast(e.message, true); }
-}
-
-async function exportVocabWords() {
-  const words = selectedVocab();
-  if (!words.length) { toast('No words selected', true); return; }
-  try {
-    // Fetch as a blob and trigger a browser download.
-    const res = await fetch('/api/vocab/export', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({words})
-    });
-    const blob = await res.blob();
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url; a.download = 'binventory_wordlist.txt';
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
-    toast(`Exported ${words.length} word(s)`);
-  } catch(e) { toast(e.message, true); }
-}
-
-function updateSettingsSheet(d) {
-  // queue status line
-  const qs = document.getElementById('settings-queue-status');
-  if (qs) {
-    if (d.worker_running || d.tagging_now) {
-      qs.textContent = `⚙ Tagging in progress — ${d.queue_size} item${d.queue_size!==1?'s':''} remaining`;
-      qs.style.color = 'var(--success)';
-    } else if (d.queue_size > 0) {
-      qs.textContent = `${d.queue_size} item${d.queue_size!==1?'s':''} queued, worker starting…`;
-      qs.style.color = 'var(--warn)';
-    } else {
-      qs.textContent = 'No items pending.';
-      qs.style.color = 'var(--muted)';
-    }
-  }
-  // schedule next-run
-  const nrl = document.getElementById('next-run-label');
-  const clb = document.getElementById('clear-sched-btn');
-  if (nrl) {
-    if (d.next_run) {
-      const t = new Date(d.next_run);
-      nrl.textContent = `Next run: ${t.toLocaleString()}`;
-      nrl.style.display = 'block';
-      if (clb) clb.style.display = 'inline-block';
-    } else {
-      nrl.style.display = 'none';
-      if (clb) clb.style.display = 'none';
-    }
-  }
-  // fill schedule inputs from server state
-  if (d.schedule_hour !== null && d.schedule_hour !== undefined) {
-    const hi = document.getElementById('sched-hour');
-    const mi = document.getElementById('sched-min');
-    if (hi) hi.value = d.schedule_hour;
-    if (mi) mi.value = d.schedule_min;
-  }
-  // clip memory status
-  const cms  = document.getElementById('clip-mem-status');
-  const ulb  = document.getElementById('unload-clip-btn');
-  if (cms) {
-    if (d.worker_running || d.tagging_now) {
-      cms.textContent = '🟢 Loaded — actively tagging';
-      if (ulb) ulb.style.display = 'none';
-    } else if (d.clip_ready) {
-      cms.textContent = '🟡 Loaded and idle — using RAM';
-      if (ulb) ulb.style.display = 'inline-block';
-    } else {
-      cms.textContent = '⚫ Not loaded — no RAM used';
-      if (ulb) ulb.style.display = 'none';
-    }
-  }
-}
-
-async function toggleAutoTag() {
-  _autoTag = !_autoTag;
-  updateAutoTagBtn();
-  await fetch('/api/settings/autotag', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({enabled: _autoTag})
-  });
-  pollClipStatus();
-}
-
-async function runAllTags() {
-  try {
-    const r = await api('/api/settings/runtags', {method:'POST', body:'{}'});
-    toast(r.queued > 0
-      ? `${r.queued} item${r.queued!==1?'s':''} queued — tagging starting…`
-      : 'All items already tagged');
-    pollClipStatus();
-  } catch(e) { toast('Error: ' + e.message, true); }
-}
-
-async function saveSchedule() {
-  const hour = parseInt(document.getElementById('sched-hour').value);
-  const min  = parseInt(document.getElementById('sched-min').value);
-  if (isNaN(hour) || hour < 0 || hour > 23) { toast('Hour must be 0–23', true); return; }
-  if (isNaN(min)  || min  < 0 || min  > 59) { toast('Minute must be 0–59', true); return; }
-  try {
-    await api('/api/settings/schedule', {method:'POST', body: JSON.stringify({hour, minute: min})});
-    toast(`Schedule set — runs daily at ${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`);
-    pollClipStatus();
-  } catch(e) { toast('Error: ' + e.message, true); }
-}
-
-async function clearSchedule() {
-  try {
-    await api('/api/settings/schedule', {method:'POST', body: JSON.stringify({hour: null})});
-    toast('Schedule cleared');
-    pollClipStatus();
-  } catch(e) { toast('Error: ' + e.message, true); }
-}
-
-async function unloadClip() {
-  try {
-    await api('/api/settings/unloadclip', {method:'POST', body:'{}'});
-    toast('CLIP unloaded — RAM freed');
-    pollClipStatus();
-  } catch(e) { toast('Error: ' + e.message, true); }
-}
-
-// ── VIEWS ─────────────────────────────────────────────────────────────────────
-function showView(name) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-
-  if (name === 'bins') {
-    document.getElementById('view-bins').classList.add('active');
-    document.getElementById('tab-bins').classList.add('active');
-  } else if (name === 'bin-detail') {
-    document.getElementById('view-bin-detail').classList.add('active');
-    document.getElementById('tab-bins').classList.add('active');
-  } else if (name === 'inventory') {
-    document.getElementById('view-inventory').classList.add('active');
-    document.getElementById('tab-inventory').classList.add('active');
-    loadInventoryView();
-  } else if (name === 'search') {
-    document.getElementById('view-search').classList.add('active');
-    document.getElementById('tab-search').classList.add('active');
-    setTimeout(() => document.getElementById('search-input').focus(), 200);
-  }
-}
-
-// ── API HELPERS ───────────────────────────────────────────────────────────────
-async function api(path, opts={}) {
-  const r = await fetch(path, {
-    headers: {'Content-Type':'application/json'},
-    ...opts
-  });
-  if (!r.ok) {
-    const e = await r.json().catch(()=>({error:r.statusText}));
-    throw new Error(e.error || r.statusText);
-  }
-  return r.json();
-}
-
-// ── BINS ──────────────────────────────────────────────────────────────────────
-async function loadBins() {
-  bins = await api('/api/bins');
-}
-
-function renderBinsView() {
-  const grid = document.getElementById('bins-grid');
-  grid.innerHTML = '';
-
-  bins.forEach(b => {
-    const card = document.createElement('div');
-    card.className = 'bin-card';
-    if (b.is_virtual) card.style.borderColor = '#fbbf24';
-    card.onclick = () => openBin(b.id);
-    const icon = b.is_virtual ? '📤 ' : '';
-    card.innerHTML = `
-      <div class="bin-dot" style="background:${b.color}"></div>
-      <div class="bin-name">${icon}${esc(b.name)}</div>
-      ${b.location ? `<div class="bin-meta">${esc(b.location)}</div>` : ''}
-      <div class="bin-count" style="${b.is_virtual ? 'background:#3d2f0a;color:#fbbf24;' : ''}">${b.item_count} item${b.item_count!==1?'s':''}</div>
-    `;
-    grid.appendChild(card);
-  });
-
-  // Add new bin card
-  const add = document.createElement('div');
-  add.className = 'bin-card bin-add';
-  add.onclick = () => openSheet('overlay-new-bin');
-  add.innerHTML = `
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    New Bin
-  `;
-  grid.appendChild(add);
-}
-
-async function createBin() {
-  const name  = document.getElementById('new-bin-name').value.trim();
-  const loc   = document.getElementById('new-bin-location').value.trim();
-  const color = document.getElementById('new-bin-color').value;
-  if (!name) { toast('Enter a bin name'); return; }
-  try {
-    await api('/api/bins', {method:'POST', body: JSON.stringify({name,location:loc,color})});
-    closeSheet('overlay-new-bin');
-    document.getElementById('new-bin-name').value = '';
-    document.getElementById('new-bin-location').value = '';
-    await loadBins();
-    renderBinsView();
-    toast(`Bin "${name}" created`);
-  } catch(e) { toast(e.message, true); }
-}
-
-function openBin(binId) {
-  currentBinId = binId;
-  const bin = bins.find(b => b.id === binId);
-  if (!bin) return;
-  document.getElementById('bin-detail-name').textContent     = bin.name;
-  document.getElementById('bin-detail-location').textContent = bin.is_virtual ? 'Items currently checked out' : (bin.location || '');
-  document.getElementById('bin-detail-dot').style.background = bin.color;
-
-  const findBtn   = document.getElementById('bin-find-btn');
-  const wledBtn    = document.getElementById('bin-wled-btn');
-  const addItemBtn = document.getElementById('bin-add-item-btn');
-  const editBtn    = document.getElementById('bin-edit-btn');
-
-  if (bin.is_virtual) {
-    // Checked Out pseudo-bin — hide editing/WLED/add-item controls
-    if (findBtn) findBtn.style.display = 'none';
-    if (wledBtn) wledBtn.style.display = 'none';
-    if (addItemBtn) addItemBtn.style.display = 'none';
-    if (editBtn) editBtn.style.display = 'none';
-  } else {
-    if (addItemBtn) addItemBtn.style.display = 'inline-flex';
-    if (editBtn) editBtn.style.display = 'inline-flex';
-    // WLED buttons — show if global WLED is enabled
-    if (_wledGlobalEnabled) {
-      if (wledBtn) wledBtn.style.display = 'inline-flex';
-      if (findBtn) {
-        findBtn.style.display = bin.wled_enabled ? 'inline-flex' : 'none';
-        findBtn.textContent   = '💡 Find';
-        findBtn.classList.remove('firing');
-      }
-    } else {
-      if (wledBtn) wledBtn.style.display = 'none';
-      if (findBtn) findBtn.style.display = 'none';
-    }
-  }
-
-  showView('bin-detail');
-  loadBinItems();
-}
-
-async function loadBinItems() {
-  const grid = document.getElementById('bin-items-grid');
-  grid.innerHTML = '<div class="muted text-sm">Loading…</div>';
-  const items = await api(`/api/items?bin_id=${currentBinId}`);
-  renderItemGrid(grid, items);
-}
-
-// ── EDIT BIN ──────────────────────────────────────────────────────────────────
-function openEditBinSheet() {
-  const bin = bins.find(b => b.id === currentBinId);
-  if (!bin) return;
-  document.getElementById('edit-bin-name').value    = bin.name;
-  document.getElementById('edit-bin-location').value = bin.location;
-  document.getElementById('edit-bin-color').value   = bin.color;
-  openSheet('overlay-edit-bin');
-}
-
-async function saveBinEdit() {
-  const name  = document.getElementById('edit-bin-name').value.trim();
-  const loc   = document.getElementById('edit-bin-location').value.trim();
-  const color = document.getElementById('edit-bin-color').value;
-  if (!name) { toast('Name required'); return; }
-  try {
-    await api(`/api/bins/${currentBinId}`, {method:'PUT', body: JSON.stringify({name,location:loc,color})});
-    closeSheet('overlay-edit-bin');
-    await loadBins();
-    openBin(currentBinId);  // refresh header
-    toast('Bin updated');
-  } catch(e) { toast(e.message, true); }
-}
-
-let _deleteMode = 'checkout';
-
-function openDeleteBinSheet() {
-  const bin = bins.find(b => b.id === currentBinId);
-  if (!bin) return;
-  document.getElementById('delete-bin-name').textContent  = bin.name;
-  document.getElementById('delete-bin-count').textContent = `${bin.item_count} item${bin.item_count!==1?'s':''}`;
-  document.getElementById('delete-confirm-input').value   = '';
-  setDeleteMode('checkout');
-  checkDeleteConfirm();
-  closeSheet('overlay-edit-bin');
-  openSheet('overlay-delete-bin');
-}
-
-function setDeleteMode(mode) {
-  _deleteMode = mode;
-  document.getElementById('del-mode-checkout').classList.toggle('active', mode === 'checkout');
-  document.getElementById('del-mode-delete').classList.toggle('active', mode === 'delete');
-  checkDeleteConfirm();
-}
-
-function checkDeleteConfirm() {
-  const val = document.getElementById('delete-confirm-input').value.trim().toLowerCase();
-  const btn = document.getElementById('delete-bin-confirm-btn');
-  const ok  = val === 'delete';
-  btn.disabled = !ok;
-  btn.style.opacity = ok ? '1' : '0.5';
-  btn.textContent = _deleteMode === 'delete' ? 'Delete Bin & All Contents' : 'Remove Bin & Check Out Items';
-}
-
-async function executeDeleteBin() {
-  const confirmText = document.getElementById('delete-confirm-input').value.trim();
-  try {
-    const r = await api(`/api/bins/${currentBinId}`, {
-      method: 'DELETE',
-      body: JSON.stringify({ confirm: confirmText, contents: _deleteMode })
-    });
-    closeSheet('overlay-delete-bin');
-    await loadBins();
-    showView('bins');
-    renderBinsView();
-    updateCartBadge();
-    if (_deleteMode === 'checkout') {
-      toast(`Bin removed — ${r.checked_out} item${r.checked_out!==1?'s':''} checked out`);
-    } else {
-      toast(`Bin and ${r.deleted_items} item${r.deleted_items!==1?'s':''} deleted`);
-    }
-  } catch(e) { toast(e.message, true); }
-}
-
-// ── ADD ITEM ──────────────────────────────────────────────────────────────────
-function openAddItemSheet() {
-  const bin = bins.find(b => b.id === currentBinId);
-  document.getElementById('add-item-bin-name').textContent = bin ? bin.name : '';
-  document.getElementById('item-label').value = '';
-  document.getElementById('item-notes').value = '';
-  document.getElementById('btn-save-item').disabled = true;
-  capturedBlob = null;
-  // Seed the per-item OCR toggle from the user's configured default.
-  _itemOcrOn = !!_ocrSettings.ocr_default_on;
-  updateItemOcrBtn();
-  resetCameraUI();
-  openSheet('overlay-add-item');
-}
-
-async function startCamera() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width:{ideal:1280}, height:{ideal:720} }
-    });
-    cameraStream = stream;
-    const vid = document.getElementById('camera-video');
-    vid.srcObject = stream;
-    vid.style.display = 'block';
-    document.getElementById('camera-placeholder').style.display = 'none';
-    document.getElementById('photo-preview').style.display = 'none';
-    document.getElementById('btn-capture').disabled = false;
-    document.getElementById('btn-start-cam').disabled = true;
-  } catch(e) {
-    toast('Camera access denied — use Upload instead', true);
-  }
-}
-
-function capturePhoto() {
-  const vid    = document.getElementById('camera-video');
-  const canvas = document.getElementById('camera-canvas');
-  canvas.width  = vid.videoWidth;
-  canvas.height = vid.videoHeight;
-  canvas.getContext('2d').drawImage(vid, 0, 0);
-  canvas.toBlob(blob => {
-    capturedBlob = blob;
-    showPreview(URL.createObjectURL(blob));
-  }, 'image/jpeg', 0.85);
-  stopCamera();
-}
-
-function handleFileUpload(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  capturedBlob = file;
-  showPreview(URL.createObjectURL(file));
-  e.target.value = '';
-}
-
-// Rotate the not-yet-uploaded photo. We redraw it through a canvas so the
-// bytes we upload are already upright — the server then never has to guess.
-async function rotateStaged(deg) {
-  if (!capturedBlob) return;
-  const img = new Image();
-  const url = URL.createObjectURL(capturedBlob);
-  await new Promise(res => { img.onload = res; img.src = url; });
-
-  const cv = document.createElement('canvas');
-  const swap = Math.abs(deg) === 90;
-  cv.width  = swap ? img.height : img.width;
-  cv.height = swap ? img.width  : img.height;
-
-  const ctx = cv.getContext('2d');
-  ctx.translate(cv.width / 2, cv.height / 2);
-  ctx.rotate(deg * Math.PI / 180);
-  ctx.drawImage(img, -img.width / 2, -img.height / 2);
-
-  cv.toBlob(b => {
-    capturedBlob = b;
-    URL.revokeObjectURL(url);
-    showPreview(URL.createObjectURL(b));
-  }, 'image/jpeg', 0.9);
-}
-
-function showPreview(url) {
-  const prev = document.getElementById('photo-preview');
-  prev.src = url;
-  prev.style.display = 'block';
-  const rc = document.getElementById('rotate-controls');
-  if (rc) rc.style.display = 'flex';
-  document.getElementById('camera-video').style.display = 'none';
-  document.getElementById('camera-placeholder').style.display = 'none';
-  document.getElementById('btn-save-item').disabled = false;
-  document.getElementById('btn-capture').disabled = true;
-  document.getElementById('btn-start-cam').disabled = false;
-}
-
-function stopCamera() {
-  if (cameraStream) {
-    cameraStream.getTracks().forEach(t => t.stop());
-    cameraStream = null;
-  }
-  document.getElementById('camera-video').style.display = 'none';
-  document.getElementById('btn-capture').disabled = true;
-  document.getElementById('btn-start-cam').disabled = false;
-}
-
-function resetCameraUI() {
-  stopCamera();
-  const rc = document.getElementById('rotate-controls');
-  if (rc) rc.style.display = 'none';
-  document.getElementById('photo-preview').style.display = 'none';
-  document.getElementById('camera-placeholder').style.display = 'flex';
-  document.getElementById('camera-placeholder').style.alignItems = 'center';
-  document.getElementById('camera-placeholder').style.justifyContent = 'center';
-  document.getElementById('camera-placeholder').style.flexDirection = 'column';
-}
-
-async function saveItem() {
-  if (!capturedBlob) { toast('Take or upload a photo first'); return; }
-  const btn = document.getElementById('btn-save-item');
-  btn.disabled = true;
-  btn.innerHTML = '<div class="spinner"></div> Saving…';
-
-  const fd = new FormData();
-  fd.append('bin_id', currentBinId);
-  fd.append('photo', capturedBlob, 'photo.jpg');
-  fd.append('label', document.getElementById('item-label').value.trim());
-  fd.append('notes', document.getElementById('item-notes').value.trim());
-  fd.append('run_ocr', _itemOcrOn ? 'true' : 'false');
-
-  try {
-    const item = await fetch('/api/items', {method:'POST', body: fd}).then(r=>r.json());
-    closeSheet('overlay-add-item');
-    stopCamera();
-
-    if (_autoTag) {
-      toast(`Saved — queued for tagging`);
-    } else {
-      toast(`Saved — auto-tag is OFF, tap "Tag All" when ready`);
-    }
-
-    await loadBins();
-    renderBinsView();
-    loadBinItems();
-  } catch(e) {
-    toast('Save failed: ' + e.message, true);
-  }
-  btn.disabled = false;
-  btn.innerHTML = 'Save Item';
-}
-
-// ── INVENTORY ─────────────────────────────────────────────────────────────────
-async function loadInventoryView() {
-  const grid  = document.getElementById('inventory-grid');
-  const chips = document.getElementById('inv-bin-chips');
-  grid.innerHTML = '<div class="muted text-sm">Loading…</div>';
-
-  let items;
-  if (invBinFilter === 'checked_out') {
-    items = await api('/api/items?bin_id=checked_out');
-  } else if (invBinFilter) {
-    items = await api(`/api/items?bin_id=${invBinFilter}`);
-  } else {
-    // Default "All" view — active items with checked-out items pinned to the front
-    const [active, checkedOut] = await Promise.all([
-      api('/api/items'),
-      api('/api/items?bin_id=checked_out'),
-    ]);
-    items = [...checkedOut, ...active];
-  }
-
-  // render bin filter chips
-  chips.innerHTML = '';
-  const allChip = document.createElement('div');
-  allChip.className = 'chip' + (!invBinFilter ? ' active' : '');
-  allChip.textContent = `All (${items.length})`;
-  allChip.onclick = () => { invBinFilter = null; loadInventoryView(); };
-  chips.appendChild(allChip);
-
-  const checkedOutBin = bins.find(b => b.is_virtual);
-  if (checkedOutBin) {
-    const c = document.createElement('div');
-    c.className = 'chip' + (invBinFilter === 'checked_out' ? ' active' : '');
-    c.style.borderColor = '#fbbf24';
-    c.innerHTML = `📤 Checked Out (${checkedOutBin.item_count})`;
-    c.onclick = () => { invBinFilter = 'checked_out'; loadInventoryView(); };
-    chips.appendChild(c);
-  }
-
-  bins.filter(b => !b.is_virtual).forEach(b => {
-    const c = document.createElement('div');
-    c.className = 'chip' + (invBinFilter === b.id ? ' active' : '');
-    c.innerHTML = `<span class="bin-pip" style="background:${b.color}"></span> ${esc(b.name)} (${b.item_count})`;
-    c.onclick = () => { invBinFilter = b.id; loadInventoryView(); };
-    chips.appendChild(c);
-  });
-
-  renderItemGrid(grid, items);
-}
-
-// ── SEARCH ────────────────────────────────────────────────────────────────────
-function scheduleSearch() {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(doSearch, 350);
-}
-
-async function doSearch(smart=false) {
-  const q = document.getElementById('search-input').value.trim();
-  const status = document.getElementById('search-status');
-  const results = document.getElementById('search-results');
-  if (!q) { results.innerHTML = ''; status.textContent = ''; return; }
-
-  status.textContent = smart ? 'Loading ML model — first run can take ~20s…' : 'Searching…';
-  try {
-    const url = `/api/search?q=${encodeURIComponent(q)}${smart ? '&smart=1' : ''}`;
-    const data = await api(url);
-    // Response is {mode, results}: "semantic" used the ML model, "keyword"
-    // fell back to plain text matching because the model wasn't loaded.
-    const items = data.results || [];
-    const mode  = data.mode || 'keyword';
-
-    if (!items.length) {
-      const hint = (mode === 'keyword')
-        ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div>
-             No keyword matches for "${esc(q)}".<br>
-             <span style="font-size:0.82rem;">Tap ✨ for smart search — it matches by meaning, not just words.</span>
-           </div>`
-        : `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🔍</div>No results for "${esc(q)}"</div>`;
-      results.innerHTML = hint;
-      status.textContent = '';
-    } else {
-      const badge = mode === 'semantic' ? '✨ smart' : '🔤 keyword';
-      status.innerHTML = `${items.length} result${items.length!==1?'s':''} · <span style="color:var(--accent2)">${badge}</span>`
-        + (mode === 'keyword' ? ' <span style="color:var(--muted)">— tap ✨ to match by meaning</span>' : '');
-      renderItemGrid(results, items, mode === 'semantic');
-    }
-    pollClipStatus();
-  } catch(e) {
-    status.textContent = 'Search error';
-  }
-}
-
-// Explicit "load the model and search semantically" action (the ✨ button).
-async function doSmartSearch() {
-  const btn = document.getElementById('smart-search-btn');
-  btn.disabled = true; btn.textContent = '⏳';
-  await doSearch(true);
-  btn.disabled = false; btn.textContent = '✨';
-}
-
-// ── ITEM GRID RENDERER ────────────────────────────────────────────────────────
-function renderItemGrid(container, items, showScore=false) {
-  container.innerHTML = '';
-  if (!items.length) {
-    container.innerHTML = `<div class="empty" style="grid-column:1/-1">
-      <div class="empty-icon">📦</div>
-      No items yet.<br>Tap <strong>+ Add Item</strong> to get started.
-    </div>`;
-    return;
-  }
-  items.forEach(item => {
-    const card = document.createElement('div');
-    card.className = 'item-card';
-    card.onclick = () => openItemDetail(item);
-
-    const scoreHtml = showScore && item.score != null ? `
-      <div class="score-bar"><div class="score-fill" style="width:${Math.round(item.score*100*2)}%"></div></div>
-    ` : '';
-
-    const checkedOutBadge = item.status === 'checked_out' ? `
-      <div style="position:absolute;top:6px;right:6px;background:#3d2f0a;color:#fbbf24;font-size:0.62rem;font-weight:700;padding:2px 6px;border-radius:6px;">📤 OUT</div>
-    ` : '';
-    if (checkedOutBadge) card.style.position = 'relative';
-
-    const binLine = item.status === 'checked_out'
-      ? `<span class="bin-pip" style="background:#fbbf24"></span> from ${esc(item.origin_bin_name || '?')}`
-      : `<span class="bin-pip" style="background:${item.bin_color}"></span> ${esc(item.bin_name)}`;
-
-    card.innerHTML = `
-      ${checkedOutBadge}
-      <img src="${item.photo_url}" alt="${esc(item.label)}" loading="lazy">
-      <div class="item-card-body">
-        <div class="item-card-label">${esc(item.label || 'Unlabeled')}</div>
-        <div class="item-card-bin">
-          ${binLine}
-        </div>
-        ${scoreHtml}
-      </div>
-    `;
-    container.appendChild(card);
-  });
-}
-
-// ── ITEM DETAIL ───────────────────────────────────────────────────────────────
-let currentItemStatus = 'active';
-
-async function openItemDetail(item) {
-  currentItemId     = item.id;
-  currentItemStatus = item.status || 'active';
-
-  document.getElementById('detail-photo').src   = item.photo_url;
-  document.getElementById('detail-label').value = item.label;
-  document.getElementById('detail-notes').value = item.notes;
-
-  // tags
-  const tagDiv = document.getElementById('detail-tags');
-  tagDiv.innerHTML = '';
-  if (item.tags) {
-    item.tags.split(',').map(t=>t.trim()).filter(Boolean).forEach(t => {
-      const span = document.createElement('span');
-      span.className = 'tag'; span.textContent = t;
-      tagDiv.appendChild(span);
-    });
-  }
-
-  // retag + OCR buttons
-  document.getElementById('detail-retag-row').style.display = (currentItemStatus === 'active') ? 'block' : 'none';
-
-  // Show what produced this item's name, and any OCR text we read.
-  const srcEl = document.getElementById('detail-label-source');
-  if (srcEl) {
-    const map = { ml:'🤖 ML-generated', user:'✏️ User-entered', ocr:'🔤 Read from image',
-                  scanned:'📷 Scanned', scanned_search:'📷 Scanned + looked up' };
-    srcEl.textContent = map[item.label_source] || '';
-    srcEl.style.display = srcEl.textContent ? 'block' : 'none';
-  }
-  const ocrEl = document.getElementById('detail-ocr-text');
-  if (ocrEl) {
-    if (item.ocr_text) {
-      ocrEl.textContent = '🔤 OCR read: ' + item.ocr_text;
-      ocrEl.style.display = 'block';
-    } else {
-      ocrEl.style.display = 'none';
-    }
-  }
-
-  // status banner
-  const banner = document.getElementById('detail-status-banner');
-  if (currentItemStatus === 'checked_out') {
-    banner.style.display = 'block';
-    banner.style.background = '#3d2f0a';
-    banner.style.color = '#fbbf24';
-    banner.textContent = `📤 Checked out from ${item.origin_bin_name || 'unknown bin'}`;
-  } else {
-    banner.style.display = 'none';
-  }
-
-  // WLED find button — resolves correctly for active or checked-out items
-  const findRow = document.getElementById('item-find-row');
-  if (findRow) {
-    const wledOn = _wledGlobalEnabled && (currentItemStatus === 'checked_out' ? item.origin_bin_wled : item.bin_wled);
-    findRow.style.display = wledOn ? 'block' : 'none';
-  }
-
-  // bin select / field — hidden for checked-out items (they don't live in a bin right now)
-  const binField = document.getElementById('detail-bin-field');
-  const sel = document.getElementById('detail-bin-select');
-  if (currentItemStatus === 'checked_out') {
-    binField.style.display = 'none';
-  } else {
-    binField.style.display = 'block';
-    sel.innerHTML = '';
-    bins.filter(b => !b.is_virtual).forEach(b => {
-      const opt = document.createElement('option');
-      opt.value = b.id; opt.textContent = b.name;
-      if (b.id === item.bin_id) opt.selected = true;
-      sel.appendChild(opt);
-    });
-  }
-
-  // checkout / return button
-  const checkoutRow = document.getElementById('checkout-row');
-  const checkoutBtn = document.getElementById('checkout-btn');
-  if (currentItemStatus === 'consumed') {
-    checkoutRow.style.display = 'none';
-  } else {
-    checkoutRow.style.display = 'block';
-    if (currentItemStatus === 'checked_out') {
-      checkoutBtn.textContent = '↩️ Return to Bin';
-      checkoutBtn.style.color = 'var(--success)';
-    } else {
-      checkoutBtn.textContent = '📤 Check Out Item';
-      checkoutBtn.style.color = 'var(--text)';
-    }
-  }
-
-  // consume row — hidden once already consumed
-  document.getElementById('consume-row').style.display = (currentItemStatus === 'consumed') ? 'none' : 'block';
-
-  // save/delete — consumed items are managed from the shopping list instead
-  const saveBtn = document.getElementById('detail-save-btn');
-  const delBtn  = document.getElementById('detail-delete-btn');
-  if (currentItemStatus === 'consumed') {
-    saveBtn.style.display = 'none';
-    delBtn.style.display  = 'none';
-  } else {
-    saveBtn.style.display = 'inline-flex';
-    delBtn.style.display  = 'inline-flex';
-  }
-
-  openSheet('overlay-item-detail');
-}
-
-async function toggleCheckout() {
-  try {
-    if (currentItemStatus === 'checked_out') {
-      const updated = await api(`/api/items/${currentItemId}/return`, {method:'POST'});
-      toast(`Returned to ${updated.bin_name}`);
-    } else {
-      await api(`/api/items/${currentItemId}/checkout`, {method:'POST'});
-      toast('Item checked out');
-    }
-    closeSheet('overlay-item-detail');
-    await refreshAllViews();
-  } catch(e) { toast(e.message, true); }
-}
-
-async function consumeItem() {
-  if (!confirm('Mark this item as consumed? It will move to your shopping list.')) return;
-  try {
-    await api(`/api/items/${currentItemId}/consume`, {method:'POST'});
-    closeSheet('overlay-item-detail');
-    toast('Moved to shopping list 🛒');
-    await refreshAllViews();
-  } catch(e) { toast(e.message, true); }
-}
-
-async function refreshAllViews() {
-  await loadBins();
-  renderBinsView();
-  updateCartBadge();
-  if (document.getElementById('view-bin-detail').classList.contains('active')) loadBinItems();
-  if (document.getElementById('view-inventory').classList.contains('active')) loadInventoryView();
-}
-
-async function saveItemDetail() {
-  try {
-    const updated = await api(`/api/items/${currentItemId}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        label:  document.getElementById('detail-label').value.trim(),
-        notes:  document.getElementById('detail-notes').value.trim(),
-        bin_id: document.getElementById('detail-bin-select').value,
-      })
-    });
-    closeSheet('overlay-item-detail');
-    await refreshAllViews();
-    toast('Item updated');
-  } catch(e) { toast(e.message, true); }
-}
-
-async function deleteItem() {
-  if (!confirm('Delete this item?')) return;
-  try {
-    await api(`/api/items/${currentItemId}`, {method:'DELETE'});
-    closeSheet('overlay-item-detail');
-    await refreshAllViews();
-    toast('Item deleted');
-  } catch(e) { toast(e.message, true); }
-}
-
-async function retagItem() {
-  const btn = event.target;
-  btn.disabled = true;
-  btn.textContent = '⏳ Queuing…';
-  try {
-    await api(`/api/items/${currentItemId}/retag`, {method:'POST'});
-    // show queued state on the button — it will re-enable once tags come back
-    btn.textContent = '⚙ In queue…';
-    toast('Queued — tags will update once CLIP finishes');
-    pollClipStatus();
-    // poll until this specific item has tags, then refresh the detail view
-    const itemId = currentItemId;
-    const checkDone = async () => {
-      try {
-        const items = await api(`/api/items?bin_id=all`).catch(() => null);
-        // re-fetch this item directly via inventory endpoint
-        const res = await fetch(`/api/items`);
-        const all = await res.json();
-        const updated = all.find(i => i.id === itemId);
-        if (updated && updated.tags) {
-          // refresh tag chips in the open sheet if still viewing same item
-          if (currentItemId === itemId) {
-            const tagDiv = document.getElementById('detail-tags');
-            tagDiv.innerHTML = '';
-            updated.tags.split(',').map(t=>t.trim()).filter(Boolean).forEach(t => {
-              const span = document.createElement('span');
-              span.className = 'tag'; span.textContent = t;
-              tagDiv.appendChild(span);
-            });
-            if (!document.getElementById('detail-label').value && updated.label) {
-              document.getElementById('detail-label').value = updated.label;
-            }
-          }
-          btn.disabled = false;
-          btn.textContent = '🔄 Re-run ML tagging';
-          toast('Tags updated ✓');
-        } else {
-          setTimeout(checkDone, 3000);
-        }
-      } catch(e) {
-        btn.disabled = false;
-        btn.textContent = '🔄 Re-run ML tagging';
-      }
-    };
-    setTimeout(checkDone, 4000);
-  } catch(e) {
-    toast(e.message, true);
-    btn.disabled = false;
-    btn.textContent = '🔄 Re-run ML tagging';
-  }
-}
-
-// ── SHEETS ────────────────────────────────────────────────────────────────────
-function openSheet(id)  { document.getElementById(id).classList.add('active'); }
-function closeSheet(id) { document.getElementById(id).classList.remove('active'); }
-function closeAllSheets(e) {
-  if (e.target.classList.contains('overlay')) {
-    e.target.classList.remove('active');
-    stopCamera();
-  }
-}
-
-// ── TOAST ─────────────────────────────────────────────────────────────────────
-let toastTimer;
-function toast(msg, err=false) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.background = err ? '#ef4444' : '#fff';
-  t.style.color = err ? '#fff' : '#111';
-  t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-// ── UTILS ─────────────────────────────────────────────────────────────────────
-function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ── WLED GLOBAL ───────────────────────────────────────────────────────────────
-let _wledGlobalEnabled = false;
-let _wledDefaultIp     = '';
-let _wledCurrentBinId  = null;
-let _wledTotalLeds     = 30;   // updated after ping
-let _wledPreviewTimer  = null;
-
-// strip state (in the setup sheet)
-let _wS = { start: 0, len: 5, color: '#ffffff', brightness: 128, effect: 'solid', chaseStart: 0, chaseSize: 3, chaseSpeed: 50 };
-
-async function loadWledGlobal() {
-  try {
-    const d = await api('/api/wled/settings');
-    _wledGlobalEnabled = d.enabled;
-    _wledDefaultIp     = d.default_ip;
-    updateWledGlobalUI();
-  } catch(e) {}
-}
-
-function updateWledGlobalUI() {
-  const btn = document.getElementById('wled-global-toggle');
-  if (!btn) return;
-  if (_wledGlobalEnabled) {
-    btn.textContent = '🟢 Enabled';
-    btn.style.background = '#0d2d20';
-    btn.style.color = '#34d399';
-  } else {
-    btn.textContent = '⚫ Disabled';
-    btn.style.background = 'var(--border)';
-    btn.style.color = 'var(--muted)';
-  }
-  if (document.getElementById('wled-global-ip')) {
-    document.getElementById('wled-global-ip').value = _wledDefaultIp;
-  }
-}
-
-function toggleWledGlobal() {
-  _wledGlobalEnabled = !_wledGlobalEnabled;
-  updateWledGlobalUI();
-}
-
-async function saveWledGlobal() {
-  const ip = document.getElementById('wled-global-ip').value.trim();
-  try {
-    await api('/api/wled/settings', {method:'POST', body: JSON.stringify({
-      enabled: _wledGlobalEnabled,
-      default_ip: ip,
-    })});
-    _wledDefaultIp = ip;
-    closeSheet('overlay-wled-global');
-    toast('WLED settings saved');
-    // refresh bin view to show/hide find buttons
-    await loadBins();
-    renderBinsView();
-  } catch(e) { toast(e.message, true); }
-}
-
-async function pingWled(ip, resultId) {
-  const el = document.getElementById(resultId);
-  if (!ip) { el.textContent = 'Enter an IP first'; el.style.color = 'var(--danger)'; return; }
-  el.textContent = 'Pinging…'; el.style.color = 'var(--muted)';
-  try {
-    const d = await api('/api/wled/ping', {method:'POST', body: JSON.stringify({ip})});
-    el.textContent = `✓ ${d.name}  •  ${d.led_count} LEDs  •  v${d.version}`;
-    el.style.color = 'var(--success)';
-    _wledTotalLeds = d.led_count || 30;
-    renderLedStrip();
-  } catch(e) {
-    el.textContent = '✗ ' + (e.message || 'Cannot reach device');
-    el.style.color = 'var(--danger)';
-  }
-}
-
-// ── WLED BIN SETUP ────────────────────────────────────────────────────────────
-async function openWledSheet(binId) {
-  _wledCurrentBinId = binId;
-  const bin = bins.find(b => b.id === binId);
-  if (!bin) return;
-
-  document.getElementById('wled-bin-name').textContent = bin.name;
-  document.getElementById('wled-bin-ip').value         = bin.wled_ip || _wledDefaultIp;
-  document.getElementById('wled-bin-enabled').checked  = bin.wled_enabled;
-  document.getElementById('wled-bin-duration').value   = bin.wled_duration ?? 10;
-
-  _wS = {
-    start:      bin.wled_seg_start  ?? 0,
-    len:        bin.wled_seg_len    ?? 5,
-    color:      bin.wled_color      || '#ffffff',
-    brightness: bin.wled_brightness ?? 128,
-    effect:     bin.wled_effect     || 'solid',
-    chaseStart: bin.wled_chase_start ?? 0,
-    chaseSize:  bin.wled_chase_size  ?? 3,
-    chaseSpeed: bin.wled_chase_speed ?? 50,
-  };
-
-  document.getElementById('wled-bin-color').value      = _wS.color;
-  document.getElementById('wled-bin-brightness').value = _wS.brightness;
-  updateBrightnessLabel();
-  setEffect(_wS.effect, false);
-  renderLedStrip();
-  openSheet('overlay-wled-bin');
-  sendPreview();
-}
-
-function renderLedStrip() {
-  const strip = document.getElementById('wled-led-strip');
-  if (!strip) return;
-  const total   = Math.min(_wledTotalLeds, 60);   // show max 60 in visualizer
-  const start   = _wS.start;
-  const end     = start + _wS.len;
-  const hexCol  = _wS.color;
-  const alpha   = (_wS.brightness / 255).toFixed(2);
-
-  strip.innerHTML = '';
-  for (let i = 0; i < total; i++) {
-    const pip = document.createElement('div');
-    pip.className = 'led-pip';
-    if (i >= start && i < end) {
-      pip.classList.add('active');
-      pip.style.background = hexCol;
-      pip.style.opacity    = alpha;
-      pip.style.boxShadow  = `0 0 6px 2px ${hexCol}88`;
-    }
-    strip.appendChild(pip);
-  }
-  document.getElementById('wled-strip-label').textContent =
-    `LEDs ${_wS.start}–${_wS.start + _wS.len - 1} (${_wS.len} LEDs)`;
-}
-
-function jogStrip(delta) {
-  _wS.start = Math.max(0, _wS.start + delta);
-  renderLedStrip();
-  sendPreview();
-}
-
-function resizeStrip(delta) {
-  _wS.len = Math.max(1, _wS.len + delta);
-  renderLedStrip();
-  sendPreview();
-}
-
-function setEffect(eff, preview=true) {
-  _wS.effect = eff;
-  document.getElementById('effect-solid').classList.toggle('active', eff === 'solid');
-  document.getElementById('effect-pulse').classList.toggle('active', eff === 'pulse');
-  document.getElementById('effect-chase').classList.toggle('active', eff === 'chase');
-  // Show the chase configuration panel only for the chase effect.
-  document.getElementById('chase-config').style.display = (eff === 'chase') ? 'block' : 'none';
-  if (eff === 'chase') refreshChaseLabels();
-  // Chase is animated on demand (via Preview button), so we don't auto-preview it
-  // on every toggle the way we do for solid/pulse.
-  if (preview && eff !== 'chase') sendPreview();
-}
-
-// ── CHASE CONFIG CONTROLS ───────────────────────────────────────────────────
-function refreshChaseLabels() {
-  document.getElementById('chase-start-val').textContent = _wS.chaseStart;
-  document.getElementById('chase-size-val').textContent  = _wS.chaseSize;
-  document.getElementById('chase-speed').value           = _wS.chaseSpeed;
-  document.getElementById('chase-speed-val').textContent = `${_wS.chaseSpeed} ms/LED`;
-}
-
-function chaseAdjust(field, delta) {
-  if (field === 'start') _wS.chaseStart = Math.max(0, _wS.chaseStart + delta);
-  if (field === 'size')  _wS.chaseSize  = Math.max(1, _wS.chaseSize + delta);
-  refreshChaseLabels();
-}
-
-function chaseSpeedInput() {
-  _wS.chaseSpeed = parseInt(document.getElementById('chase-speed').value);
-  document.getElementById('chase-speed-val').textContent = `${_wS.chaseSpeed} ms/LED`;
-}
-
-async function previewChase() {
-  const ip = document.getElementById('wled-bin-ip')?.value.trim();
-  if (!ip) { toast('Enter the WLED IP first', true); return; }
-  try {
-    await api('/api/wled/preview', {method:'POST', body: JSON.stringify({
-      ip,
-      seg_start:   _wS.start,
-      seg_len:     _wS.len,
-      color:       _wS.color,
-      brightness:  _wS.brightness,
-      effect:      'chase',
-      chase_start: _wS.chaseStart,
-      chase_size:  _wS.chaseSize,
-      chase_speed: _wS.chaseSpeed,
-    })});
-  } catch(e) { toast('Preview failed: ' + e.message, true); }
-}
-
-function updateBrightnessLabel() {
-  const v = document.getElementById('wled-bin-brightness').value;
-  document.getElementById('wled-brightness-label').textContent = v;
-  _wS.brightness = parseInt(v);
-  renderLedStrip();
-}
-
-// Debounced live preview sender
-let _previewTimer = null;
-function sendPreview() {
-  _wS.color      = document.getElementById('wled-bin-color')?.value      || _wS.color;
-  _wS.brightness = parseInt(document.getElementById('wled-bin-brightness')?.value || _wS.brightness);
-  renderLedStrip();
-  clearTimeout(_previewTimer);
-  _previewTimer = setTimeout(async () => {
-    const ip = document.getElementById('wled-bin-ip')?.value.trim();
-    if (!ip) return;
-    try {
-      await api('/api/wled/preview', {method:'POST', body: JSON.stringify({
-        ip,
-        seg_start:  _wS.start,
-        seg_len:    _wS.len,
-        color:      _wS.color,
-        brightness: _wS.brightness,
-        effect:     _wS.effect,
-      })});
-    } catch(e) { /* device offline — ignore */ }
-  }, 300);
-}
-
-async function wledPreviewOff() {
-  const ip = document.getElementById('wled-bin-ip')?.value.trim() || _wledDefaultIp;
-  if (!ip) return;
-  try { await api('/api/wled/off', {method:'POST', body: JSON.stringify({ip})}); } catch(e) {}
-}
-
-async function pingWledBin() {
-  const ip = document.getElementById('wled-bin-ip').value.trim();
-  await pingWled(ip, 'wled-bin-ping-result');
-}
-
-async function saveWledBin() {
-  const ip       = document.getElementById('wled-bin-ip').value.trim();
-  const enabled  = document.getElementById('wled-bin-enabled').checked;
-  const duration = parseInt(document.getElementById('wled-bin-duration').value) || 10;
-  if (!ip) { toast('Enter the WLED device IP', true); return; }
-  try {
-    await api(`/api/bins/${_wledCurrentBinId}`, {method:'PUT', body: JSON.stringify({
-      wled_enabled:     enabled,
-      wled_ip:          ip,
-      wled_seg_start:   _wS.start,
-      wled_seg_len:     _wS.len,
-      wled_color:       _wS.color,
-      wled_brightness:  _wS.brightness,
-      wled_effect:      _wS.effect,
-      wled_duration:    duration,
-      wled_chase_start: _wS.chaseStart,
-      wled_chase_size:  _wS.chaseSize,
-      wled_chase_speed: _wS.chaseSpeed,
-    })});
-    await loadBins();
-    closeSheet('overlay-wled-bin');
-    wledPreviewOff();
-    // refresh bin detail header
-    openBin(_wledCurrentBinId);
-    toast('WLED config saved');
-  } catch(e) { toast(e.message, true); }
-}
-
-// ── FIND ──────────────────────────────────────────────────────────────────────
-let _findOffTimer = null;
-
-async function findBin(binId) {
-  const btn = document.getElementById('bin-find-btn');
-  if (btn) { btn.classList.add('firing'); btn.textContent = '💡 Lit!'; }
-  clearTimeout(_findOffTimer);
-  try {
-    const r = await api(`/api/wled/find/${binId}`, {method:'POST', body:'{}'});
-    if (r.duration > 0) {
-      _findOffTimer = setTimeout(async () => {
-        try { await api('/api/wled/off', {method:'POST', body: JSON.stringify({ip: r.ip})}); } catch(e) {}
-        if (btn) { btn.classList.remove('firing'); btn.textContent = '💡 Find'; }
-      }, r.duration * 1000);
-    } else {
-      if (btn) { setTimeout(() => { btn.classList.remove('firing'); btn.textContent = '💡 Find'; }, 1500); }
-    }
-  } catch(e) {
-    toast('WLED error: ' + e.message, true);
-    if (btn) { btn.classList.remove('firing'); btn.textContent = '💡 Find'; }
-  }
-}
-
-async function findBinFromItem() {
-  if (!currentItemId) { toast('No item selected', true); return; }
-  const btn = event.target;
-  btn.classList.add('firing');
-  btn.textContent = '💡 Lit!';
-  clearTimeout(_findOffTimer);
-  try {
-    const r = await api(`/api/wled/find-item/${currentItemId}`, {method:'POST', body:'{}'});
-    if (r.duration > 0) {
-      _findOffTimer = setTimeout(async () => {
-        try { await api('/api/wled/off', {method:'POST', body: JSON.stringify({ip: r.ip})}); } catch(e) {}
-        btn.classList.remove('firing');
-        btn.textContent = "💡 Find This Item's Bin";
-      }, r.duration * 1000);
-    } else {
-      setTimeout(() => { btn.classList.remove('firing'); btn.textContent = "💡 Find This Item's Bin"; }, 1500);
-    }
-  } catch(e) {
-    toast('WLED error: ' + e.message, true);
-    btn.classList.remove('firing');
-    btn.textContent = "💡 Find This Item's Bin";
-  }
-}
-
-async function rotateSavedItem() {
-  const btn = event.target;
-  btn.disabled = true; btn.textContent = '⏳ Rotating…';
-  try {
-    const r = await api(`/api/items/${currentItemId}/rotate`, {method:'POST', body: JSON.stringify({degrees:90})});
-    // Cache-bust so the browser shows the newly rotated file, not the old one.
-    document.getElementById('detail-photo').src = r.photo_url + '?t=' + Date.now();
-    toast('Rotated — re-processing image');
-    pollClipStatus();
-  } catch(e) { toast(e.message, true); }
-  btn.disabled = false; btn.textContent = '↻ Rotate';
-}
-
-async function runItemOcr() {
-  const btn = event.target;
-  btn.disabled = true;
-  btn.textContent = '⏳ Queuing…';
-  try {
-    await api(`/api/items/${currentItemId}/run-ocr`, {method:'POST'});
-    toast('Queued for OCR — text will appear shortly');
-    pollClipStatus();
-  } catch(e) { toast(e.message, true); }
-  btn.disabled = false;
-  btn.textContent = '🔤 Run OCR';
-}
-
-// ── SHOPPING LIST ─────────────────────────────────────────────────────────────
-let _restockItem = null;
-let _restockMode = 'same';
-let _restockNewPhotoFile = null;
-
-async function updateCartBadge() {
-  try {
-    const items = await api('/api/items?status=consumed');
-    const badge = document.getElementById('cart-badge');
-    if (items.length > 0) {
-      badge.textContent = items.length > 99 ? '99+' : items.length;
-      badge.style.display = 'block';
-    } else {
-      badge.style.display = 'none';
-    }
-  } catch(e) {}
-}
-
-async function openShoppingList() {
-  const container = document.getElementById('shopping-list-items');
-  container.innerHTML = '<div class="muted text-sm">Loading…</div>';
-  openSheet('overlay-shopping-list');
-  try {
-    const items = await api('/api/items?status=consumed');
-    if (!items.length) {
-      container.innerHTML = `<div class="empty"><div class="empty-icon">🛒</div>Shopping list is empty.<br>Consumed items appear here.</div>`;
-      return;
-    }
-    container.innerHTML = '';
-    items.forEach(item => {
-      const row = document.createElement('div');
-      row.className = 'card';
-      row.style.display = 'flex';
-      row.style.gap = '10px';
-      row.innerHTML = `
-        <img src="${item.photo_url}" style="width:64px;height:64px;border-radius:8px;object-fit:cover;flex-shrink:0;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-weight:600;font-size:0.9rem;">${esc(item.label || 'Unlabeled')}</div>
-          <div class="text-sm muted">Was in: ${esc(item.origin_bin_name || 'unknown bin')}</div>
-          <div style="display:flex;gap:6px;margin-top:8px;">
-            <button class="btn btn-primary btn-sm" onclick='openRestockSheet(${JSON.stringify(item).replace(/'/g, "&apos;")})'>↩️ Restock</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteFromShoppingList('${item.id}')">Delete</button>
-          </div>
-        </div>
-      `;
-      container.appendChild(row);
-    });
-  } catch(e) {
-    container.innerHTML = `<div class="empty">Error loading shopping list</div>`;
-  }
-}
-
-async function deleteFromShoppingList(itemId) {
-  if (!confirm('Permanently remove this item from the shopping list?')) return;
-  try {
-    await api(`/api/items/${itemId}/shopping-delete`, {method:'DELETE'});
-    toast('Removed from shopping list');
-    openShoppingList();
-    updateCartBadge();
-  } catch(e) { toast(e.message, true); }
-}
-
-function openRestockSheet(item) {
-  _restockItem = item;
-  _restockNewPhotoFile = null;
-  document.getElementById('restock-item-label').textContent = item.label || 'item';
-  document.getElementById('restock-photo').src = item.photo_url;
-  document.getElementById('restock-origin-bin-name').textContent = item.origin_bin_name || 'its original bin';
-  document.getElementById('restock-label').value = item.label;
-  document.getElementById('restock-notes').value = item.notes;
-  document.getElementById('restock-photo-status').textContent = '';
-
-  const sel = document.getElementById('restock-bin-select');
-  sel.innerHTML = '';
-  bins.filter(b => !b.is_virtual).forEach(b => {
-    const opt = document.createElement('option');
-    opt.value = b.id; opt.textContent = b.name;
-    if (b.id === item.origin_bin_id) opt.selected = true;
-    sel.appendChild(opt);
-  });
-
-  setRestockMode('same');
-  closeSheet('overlay-shopping-list');
-  openSheet('overlay-restock');
-}
-
-function setRestockMode(mode) {
-  _restockMode = mode;
-  document.getElementById('restock-mode-same').classList.toggle('active', mode === 'same');
-  document.getElementById('restock-mode-update').classList.toggle('active', mode === 'update');
-  document.getElementById('restock-update-fields').style.display = (mode === 'update') ? 'block' : 'none';
-  document.getElementById('restock-same-note').style.display = (mode === 'same') ? 'block' : 'none';
-}
-
-function handleRestockPhotoUpload(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  _restockNewPhotoFile = file;
-  document.getElementById('restock-photo').src = URL.createObjectURL(file);
-  document.getElementById('restock-photo-status').textContent = '✓ New photo selected — will re-run ML tagging';
-  document.getElementById('restock-photo-status').style.color = 'var(--success)';
-}
-
-async function confirmRestock() {
-  if (!_restockItem) return;
-  try {
-    let updated;
-    if (_restockMode === 'same') {
-      updated = await api(`/api/items/${_restockItem.id}/restock`, {method:'POST', body: JSON.stringify({mode:'same'})});
-    } else if (_restockNewPhotoFile) {
-      // photo replacement uses multipart
-      const fd = new FormData();
-      fd.append('bin_id', document.getElementById('restock-bin-select').value);
-      fd.append('label', document.getElementById('restock-label').value.trim());
-      fd.append('notes', document.getElementById('restock-notes').value.trim());
-      fd.append('photo', _restockNewPhotoFile);
-      updated = await fetch(`/api/items/${_restockItem.id}/restock-photo`, {method:'POST', body: fd}).then(r=>r.json());
-    } else {
-      updated = await api(`/api/items/${_restockItem.id}/restock`, {method:'POST', body: JSON.stringify({
-        mode: 'update',
-        bin_id: document.getElementById('restock-bin-select').value,
-        label:  document.getElementById('restock-label').value.trim(),
-        notes:  document.getElementById('restock-notes').value.trim(),
-      })});
-    }
-    closeSheet('overlay-restock');
-    toast(updated.wled_fired ? `Restocked — bin illuminated 💡` : 'Item restocked');
-    await refreshAllViews();
-  } catch(e) { toast(e.message, true); }
-}
-</script>
+<script type="module" src="/static/js/main.js"></script>
 </body>
 </html>

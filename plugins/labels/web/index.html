@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Label maker</title>
+<link rel="stylesheet" href="/static/css/tokens.css">
+<link rel="stylesheet" href="/static/css/components.css">
+<style>
+  body { padding: 14px; font-size: 0.86rem; background: var(--bg); }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .panel h3 { margin-bottom: 8px; }
+  .seg { display: flex; gap: 6px; margin-bottom: 10px; }
+  .seg button { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--muted); cursor: pointer; font-weight: 600; }
+  .seg button.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .list { max-height: 300px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; }
+  .row { display: flex; align-items: center; gap: 8px; padding: 7px 9px; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .row:last-child { border-bottom: none; }
+  .row img { width: 34px; height: 34px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+  .row .sub { color: var(--muted); font-size: 0.74rem; }
+  .row .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .badge { font-size: 0.68rem; background: var(--accent-soft); color: var(--accent2); border-radius: 10px; padding: 2px 7px; white-space: nowrap; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 560px) { .grid2 { grid-template-columns: 1fr; } }
+  label.lbl { display: block; color: var(--muted); font-size: 0.74rem; margin-bottom: 4px; }
+  select, input[type=text], input[type=number] { width: 100%; background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px; font-size: 0.85rem; }
+  .opts { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; }
+  .opts label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .info { border-color: var(--accent-line); background: var(--accent-soft); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.76rem; margin-top: 6px; }
+  th, td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; }
+  td.hit { background: var(--accent); color: var(--on-accent); border-radius: 6px; font-weight: 700; }
+  tr.cur td:first-child { color: var(--accent2); font-weight: 700; }
+  .muted { color: var(--muted); }
+  .small { font-size: 0.74rem; line-height: 1.45; }
+  #preview { display: block; max-width: 100%; max-height: 340px; margin: 6px auto; background: #fff; border-radius: 4px; box-shadow: 0 0 0 1px var(--border); image-rendering: pixelated; }
+  .warn { color: var(--warn); }
+  .bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .grid3 { display: grid; grid-template-columns: 1.4fr 1.2fr 0.8fr; gap: 10px; }
+  @media (max-width: 560px) { .grid3 { grid-template-columns: 1fr; } }
+  details.panel > summary { cursor: pointer; font-weight: 600; font-size: 0.95rem; list-style: none; display: flex; align-items: center; gap: 8px; }
+  details.panel > summary::-webkit-details-marker { display: none; }
+  details.panel > summary::before { content: ""; width: 6px; height: 6px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(-45deg); transition: transform 0.15s; margin: 0 2px; }
+  details.panel[open] > summary::before { transform: rotate(45deg); }
+  details.panel > summary .hint { margin-left: auto; font-weight: 400; color: var(--muted); font-size: 0.74rem; }
+  details.panel[open] > summary { margin-bottom: 8px; }
+  .reprint { border-color: var(--success); background: var(--success-soft); }
+  .reprint .code { font-family: ui-monospace, Consolas, monospace; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div id="reprint" class="panel reprint" style="display:none;">
+  <h3>Replacement label</h3>
+  <div id="reprint-text" class="small"></div>
+  <div class="bar" style="margin-top:8px;">
+    <button class="btn btn-secondary btn-sm" id="new-code">Issue a new code instead…</button>
+    <span class="small muted">Only if the old label is lost or on the wrong box: it stops working.</span>
+  </div>
+</div>
+
+<div class="panel">
+  <h3>1 · What to label</h3>
+  <div class="seg">
+    <button id="mode-bin" class="on"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#package"/></svg> Bins</button>
+    <button id="mode-item"><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#tag"/></svg> Items</button>
+  </div>
+  <div id="item-bin-row" style="display:none;margin-bottom:8px;">
+    <label class="lbl">Items in</label>
+    <select id="item-bin"></select>
+  </div>
+  <div class="bar" style="margin-bottom:8px;">
+    <input type="text" id="filter" placeholder="Filter…" style="flex:1;">
+    <button class="btn btn-secondary btn-sm" id="all">All</button>
+    <button class="btn btn-secondary btn-sm" id="none">None</button>
+  </div>
+  <div id="list" class="list"></div>
+</div>
+
+<div class="panel">
+  <h3>2 · Label</h3>
+  <div class="grid3">
+    <div><label class="lbl" for="size">Size</label><select id="size"></select></div>
+    <div><label class="lbl" for="style">Code style</label><select id="style"></select></div>
+    <div><label class="lbl" for="text-size">Text size</label><select id="text-size"></select></div>
+  </div>
+  <div class="opts">
+    <label><input type="checkbox" id="o-text" checked> Name</label>
+    <label><input type="checkbox" id="o-location" checked> Where it is</label>
+    <label class="for-bin"><input type="checkbox" id="o-contents" checked> Contents list</label>
+    <label class="for-item" style="display:none"><input type="checkbox" id="o-notes"> Notes (4×6)</label>
+    <label class="for-item" style="display:none"><input type="checkbox" id="o-barcode"> Use the item's own barcode when it has one</label>
+    <label>Copies <input type="number" id="copies" min="1" max="20" value="1" style="width:64px;"></label>
+  </div>
+  <div id="style-note" class="small muted" style="margin-top:8px;"></div>
+</div>
+
+<details class="panel info" id="dist-box">
+  <summary><svg class="i" aria-hidden="true"><use href="/static/icons/lucide.svg#ruler"/></svg> Label sizes and read distance <span class="hint" id="dist-summary"></span></summary>
+  <div class="small muted">Roughly how far away each code can be read, for the size and style you picked
+    (highlighted). Rules of thumb for a typical phone — light, angle and print quality move them, so test
+    one label before printing a batch.</div>
+  <table id="dist"></table>
+  <div id="dist-how" class="small muted" style="margin-top:8px;"></div>
+</details>
+
+<div class="panel">
+  <h3>3 · Preview and print</h3>
+  <img id="preview" alt="">
+  <div id="preview-note" class="small muted" style="text-align:center;"></div>
+  <div class="bar" style="margin-top:10px;">
+    <button class="btn btn-primary" id="go" disabled>Open PDF</button>
+    <span id="count" class="muted"></span>
+  </div>
+  <details class="small muted" style="margin-top:10px;">
+    <summary style="cursor:pointer;">How to print on a Dymo</summary>
+    <div style="margin-top:4px;">In the print dialog pick your LabelWriter, set the paper to the matching Dymo label
+    (part number in the size list), and print at <b>Actual size / 100%</b>, not "Fit to page".
+    Each PDF page is exactly one label.</div>
+  </details>
+  <div id="base" class="small" style="margin-top:8px;"></div>
+</div>
+
+<script type="module">
+import { icon } from '/static/js/icons.js';
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const api = async (url, opts = {}) => {
+  const r = await fetch(url, {headers: {'Content-Type': 'application/json'}, ...opts});
+  if (!r.ok) { let m = r.statusText; try { m = (await r.json()).error || m; } catch (e) {} throw new Error(m); }
+  return r;
+};
+
+const st = { mode: 'bin', rows: [], picked: new Set(), info: null, bins: [], reprint: null };
+const params = new URLSearchParams(location.search);
+
+async function boot() {
+  st.info = await (await api('info')).json();
+  $('size').innerHTML = st.info.sizes.map(s =>
+    `<option value="${esc(s.key)}">${esc(s.key)} — ${esc(s.name)} (Dymo ${esc(s.dymo)})</option>`).join('');
+  $('style').innerHTML = st.info.styles.map(s => `<option>${esc(s)}</option>`).join('');
+  $('text-size').innerHTML = st.info.text_sizes.map(s => `<option>${esc(s)}</option>`).join('');
+  $('size').value = st.info.defaults.size;
+  $('style').value = st.info.defaults.style;
+  $('text-size').value = st.info.defaults.text_size;
+  const others = st.info.other_addresses || [];
+  $('base').innerHTML = `QR labels link to <b>${esc(st.info.base_url)}</b> — ${esc(st.info.base_url_note)}.`
+    + (others.length ? ` <span class="warn">This computer also answers on ${others.map(esc).join(', ')}
+       (a VPN or virtual adapter, perhaps). Open the address above on your phone first; if it doesn't load,
+       set "Address in QR codes" in this plugin's settings before printing.</span>` : '');
+  st.bins = await (await api('targets?scope=bin')).json();
+  $('item-bin').innerHTML = st.bins.map(b =>
+    `<option value="${esc(b.id)}">${esc(b.path ? b.path + ' / ' + b.name : b.name)}</option>`).join('');
+
+  let target = null;
+  if (params.get('item')) {
+    const [it] = await (await api('targets?scope=item&ids=' + encodeURIComponent(params.get('item')))).json();
+    if (it) { $('item-bin').value = it.bin_id; st.picked.add(it.id); target = {...it, scope: 'item'}; }
+    await setMode('item', true);
+  } else {
+    if (params.get('bin')) {
+      st.picked.add(params.get('bin'));
+      const b = st.bins.find(x => x.id === params.get('bin'));
+      if (b) target = {...b, scope: 'bin'};
+    }
+    await setMode('bin', true);
+  }
+  if (params.get('reprint') && target) showReprint(target);
+  ['size', 'style', 'text-size', 'o-text', 'o-location', 'o-contents', 'o-notes', 'o-barcode'].forEach(id =>
+    $(id).addEventListener('change', refresh));
+}
+
+/** Reprint: set the maker up the way this label was last printed. */
+function showReprint(t) {
+  st.reprint = t;
+  const last = t.last;
+  if (last) {
+    $('size').value = last.size; $('text-size').value = last.text_size || 'Medium';
+    if (st.info.styles.includes(last.style)) $('style').value = last.style;   // Code 128 may be off now
+    const o = last.options || {};
+    [['o-text', o.text], ['o-location', o.location], ['o-contents', o.contents], ['o-notes', o.notes], ['o-barcode', o.use_barcode]]
+      .forEach(([id, v]) => { if (v !== undefined) $(id).checked = !!v; });
+  }
+  $('reprint').style.display = 'block';
+  paintReprint();
+  refresh();
+}
+
+function paintReprint() {
+  const t = st.reprint, last = t.last;
+  $('reprint-text').innerHTML = (t.code
+      ? `Same code <span class="code">${esc(t.code)}</span> as the label already printed, so that label keeps working too.`
+      : 'This will be its first label.')
+    + (last ? ` Set up as last printed on ${esc(last.at)}: ${esc(last.size)}, ${esc(last.style)}, ${esc(last.text_size || 'Medium')} text.`
+            : ' No earlier print settings are saved, so the defaults are used.');
+}
+
+async function newCode() {
+  const t = st.reprint;
+  if (!confirm(`Give “${t.name}” a new label code?\n\nThe label already printed for it will stop working. Print the new one and replace it.`)) return;
+  try {
+    const r = await (await api('new-code', {method: 'POST', body: JSON.stringify({scope: t.scope, id: t.id})})).json();
+    t.code = r.code;
+    paintReprint();
+    $('reprint-text').insertAdjacentHTML('afterbegin', `<b>New code issued${r.old ? ` (${esc(r.old)} no longer works)` : ''}.</b> `);
+    drawPreview();
+  } catch (e) { alert(e.message); }
+}
+
+async function setMode(mode, keep = false) {
+  st.mode = mode;
+  if (!keep) st.picked.clear();
+  $('mode-bin').classList.toggle('on', mode === 'bin');
+  $('mode-item').classList.toggle('on', mode === 'item');
+  $('item-bin-row').style.display = mode === 'item' ? 'block' : 'none';
+  document.querySelectorAll('.for-bin').forEach(e => e.style.display = mode === 'bin' ? '' : 'none');
+  document.querySelectorAll('.for-item').forEach(e => e.style.display = mode === 'item' ? '' : 'none');
+  st.rows = mode === 'bin' ? st.bins
+    : await (await api('targets?scope=item&bin=' + encodeURIComponent($('item-bin').value))).json();
+  drawList();
+  refresh();
+}
+
+function drawList() {
+  const f = $('filter').value.trim().toLowerCase();
+  const rows = st.rows.filter(r => !f || (r.name + ' ' + (r.path || '')).toLowerCase().includes(f));
+  $('list').innerHTML = rows.length ? rows.map(r => st.mode === 'bin'
+    ? `<label class="row"><input type="checkbox" data-id="${esc(r.id)}" ${st.picked.has(r.id) ? 'checked' : ''}>
+        <span class="grow">${r.path ? `<span class="sub">${esc(r.path)} / </span>` : ''}${esc(r.name)}
+        ${r.location ? `<span class="sub"> · ${esc(r.location)}</span>` : ''}</span>
+        <span class="sub">${r.items} item${r.items === 1 ? '' : 's'}</span></label>`
+    : `<label class="row"><input type="checkbox" data-id="${esc(r.id)}" ${st.picked.has(r.id) ? 'checked' : ''}>
+        <img src="${esc(r.thumb_url)}" alt=""><span class="grow">${esc(r.name)}</span>
+        ${r.barcode ? `<span class="badge" title="Has a barcode">${icon('barcode')} ${esc(r.barcode)}</span>` : ''}</label>`).join('')
+    : '<div class="row muted">Nothing here.</div>';
+  $('list').querySelectorAll('input[data-id]').forEach(cb => cb.addEventListener('change', () => {
+    cb.checked ? st.picked.add(cb.dataset.id) : st.picked.delete(cb.dataset.id);
+    refresh();
+  }));
+}
+
+function options() {
+  return { text: $('o-text').checked, location: $('o-location').checked, contents: $('o-contents').checked,
+           notes: $('o-notes').checked, use_barcode: $('o-barcode').checked };
+}
+
+function picked() {
+  return st.rows.filter(r => st.picked.has(r.id)).map(r => ({scope: st.mode, id: r.id}));
+}
+
+function drawDistances() {
+  const d = st.info.distances, size = $('size').value, style = $('style').value;
+  const fmt = c => `${c.inches}″ <span class="muted">(${c.cm} cm)</span>`;
+  const cur = d.rows.find(r => r.size === size);
+  if (cur) $('dist-summary').textContent = `${size}, ${style}: about ${cur.styles[style].inches}″ (${cur.styles[style].cm} cm)`;
+  $('dist').innerHTML = `<tr><th>Size</th>${st.info.styles.map(s => `<th>${esc(s)}</th>`).join('')}</tr>` +
+    d.rows.map(r => `<tr class="${r.size === size ? 'cur' : ''}"><td>${esc(r.size)}<div class="muted">${esc(r.name)} · Dymo ${esc(r.dymo)}</div></td>${st.info.styles.map(s =>
+      `<td class="${r.size === size && s === style ? 'hit' : ''}">${fmt(r.styles[s])}</td>`).join('')}</tr>`).join('');
+  $('dist-how').innerHTML = st.info.styles.map(s =>
+    `<b>${esc(s)}</b>: about ${d.factor[s]}× the code's width — ${esc(d.how[s])}.`).join('<br>');
+}
+
+let timer = null;
+function refresh() {
+  drawDistances();
+  const style = $('style').value, n = picked().length, copies = Math.max(1, +$('copies').value || 1);
+  $('style-note').textContent =
+    style === 'AprilTag' && st.mode === 'item' ? 'AprilTags are for bins (there are only 587 of them) — item labels use a QR code.'
+    : style === 'AprilTag' ? 'AprilTags read from much further away but only from a photo in the Scan tab; a phone camera app won\'t open them.'
+    : style === 'Code 128' ? 'Scan it with your barcode scanner into BINventory\'s Scan tab.'
+    : 'Any phone camera opens a QR label straight to the bin or item.';
+  $('count').textContent = n ? `${n * copies} label${n * copies === 1 ? '' : 's'}` : 'Pick something to label';
+  $('go').disabled = !n;
+  clearTimeout(timer);
+  timer = setTimeout(drawPreview, 250);
+}
+
+async function drawPreview() {
+  const first = picked()[0];
+  if (!first) { $('preview').removeAttribute('src'); $('preview-note').textContent = ''; return; }
+  try {
+    const r = await api('preview', {method: 'POST', body: JSON.stringify(
+      {...first, size: $('size').value, style: $('style').value, text_size: $('text-size').value, options: options()})});
+    $('preview').src = URL.createObjectURL(await r.blob());
+    $('preview-note').textContent = picked().length > 1 ? 'Preview of the first label' : '';
+  } catch (e) { $('preview-note').textContent = e.message; }
+}
+
+async function openPdf() {
+  $('go').disabled = true;
+  try {
+    const r = await api('pdf', {method: 'POST', body: JSON.stringify({targets: picked(),
+      size: $('size').value, style: $('style').value, text_size: $('text-size').value, options: options(),
+      copies: +$('copies').value || 1})});
+    const url = URL.createObjectURL(await r.blob());
+    if (!window.open(url, '_blank')) {           // popup blocked: offer a link instead
+      $('preview-note').innerHTML = `<a href="${url}" download="labels.pdf" style="color:var(--accent2)">Download the PDF</a>`;
+    }
+  } catch (e) { alert(e.message); }
+  $('go').disabled = false;
+}
+
+$('mode-bin').addEventListener('click', () => setMode('bin'));
+$('mode-item').addEventListener('click', () => setMode('item'));
+$('item-bin').addEventListener('change', () => setMode('item'));
+$('filter').addEventListener('input', drawList);
+$('copies').addEventListener('input', refresh);
+$('all').addEventListener('click', () => { st.rows.forEach(r => st.picked.add(r.id)); drawList(); refresh(); });
+$('none').addEventListener('click', () => { st.picked.clear(); drawList(); refresh(); });
+$('go').addEventListener('click', openPdf);
+$('new-code').addEventListener('click', newCode);
+boot().catch(e => { document.body.insertAdjacentHTML('afterbegin', `<div class="panel warn">${esc(e.message)}</div>`); });
+</script>
+</body>
+</html>

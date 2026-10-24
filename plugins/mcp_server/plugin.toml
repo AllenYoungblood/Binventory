@@ -1,0 +1,63 @@
+# AI Assistant (MCP server) — lets an AI assistant such as Claude Code search,
+# organise and light up your inventory, through the Model Context Protocol.
+# Design and decisions: ARCHITECTURE.md §9 ("The MCP server").
+
+id          = "mcp_server"
+name        = "AI Assistant (MCP server)"
+version     = "1.0.0"
+api_version = 1
+description = """Lets an AI assistant that speaks the Model Context Protocol \
+(Claude Code and others) find items, see where they are, light up their bin, \
+and keep the inventory tidy: rename, move, check out, use up and restock. It \
+cannot delete anything. Everything it changes is listed below."""
+
+# Opens a port, so it's opt-in.
+default_enabled = false
+
+# What the assistant may do. network:listen = it accepts connections (only from
+# this computer unless "Allow other devices" is on).
+permissions = ["items:read", "items:write", "bins:read", "bins:write",
+               "search:read", "lighting:control", "network:listen"]
+
+requires = ["mcp>=2.3,<3", "uvicorn>=0.30"]
+imports  = ["mcp", "uvicorn"]
+
+[[settings]]
+key     = "allow_changes"
+type    = "toggle"
+label   = "Allow changes"
+default = true
+help    = "Off = the assistant can only look. On = it can also rename, move, check out, use up, restock and create bins (never delete)."
+
+[[settings]]
+key     = "lan_access"
+type    = "toggle"
+label   = "Allow other devices on my network"
+default = false
+help    = "Off = only programs on this computer can connect. On = any device on your network that has the access token (HTTPS when a certificate exists)."
+
+[[settings]]
+key     = "port"
+type    = "number"
+label   = "Port"
+default = 5050
+min     = 1024
+max     = 65535
+help    = "Where the assistant connects. Changing it restarts the server."
+
+[[actions]]
+name       = "create_token"
+label      = "Create access token"
+permission = "network:listen"
+confirm    = "Create a new access token? Any previous token stops working."
+
+[[actions]]
+name       = "revoke_token"
+label      = "Revoke access token"
+permission = "network:listen"
+confirm    = "Revoke the access token? Devices using it will be disconnected."
+
+[[actions]]
+name       = "clear_activity"
+label      = "Clear activity"
+permission = "network:listen"

@@ -1,0 +1,398 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   BINventory — features.css
+
+   Feature-specific styling: bin grid, item grid, capture/camera, search,
+   item detail, and WLED configuration.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* ── BIN LIST ── */
+  .bin-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  @media (min-width: 500px) {
+    .bin-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (min-width: 700px) {
+    .bin-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  .bin-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 12px;
+    cursor: pointer;
+    transition: transform .1s, box-shadow .1s;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bin-card:active { transform: scale(.97); }
+  .bin-card .bin-dot {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  .bin-card .bin-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1.2;
+    word-break: break-word;
+  }
+  .bin-card .bin-meta {
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .bin-card .bin-count {
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: var(--border);
+    padding: 2px 7px;
+    border-radius: 20px;
+    width: fit-content;
+    color: var(--text);
+  }
+
+  /* Add bin card */
+  .bin-add {
+    border: 2px dashed var(--border);
+    background: transparent;
+    justify-content: center;
+    align-items: center;
+    min-height: 90px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    gap: 6px;
+  }
+  .bin-add:hover { border-color: var(--accent); color: var(--accent2); }
+
+  /* ── ITEM GRID ── */
+  .item-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  @media (min-width: 500px) {
+    .item-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (min-width: 700px) {
+    .item-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  .item-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform .1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .item-card:active { transform: scale(.97); }
+  .item-card img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    display: block;
+    background: #000;
+  }
+  .item-card-body { padding: 8px; }
+  .item-card-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 3px;
+  }
+  .item-card-bin {
+    font-size: 0.72rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .bin-pip {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+  }
+
+  /* Tags */
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 6px;
+  }
+  .tag {
+    font-size: 0.7rem;
+    background: var(--border);
+    color: var(--muted);
+    border-radius: 5px;
+    padding: 2px 7px;
+    font-weight: 500;
+  }
+
+  /* ── CAMERA / PHOTO ── */
+  #camera-container {
+    position: relative;
+    background: #000;
+    border-radius: var(--radius);
+    overflow: hidden;
+    aspect-ratio: 4/3;
+    max-height: 60dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+  #camera-video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: none;
+  }
+  #camera-canvas { display: none; }
+  #photo-preview {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    display: none;
+  }
+  .camera-placeholder {
+    color: var(--muted);
+    text-align: center;
+    font-size: 0.85rem;
+  }
+  .camera-controls {
+    display: flex; gap: 10px; margin-bottom: 12px;
+  }
+
+  /* ── SEARCH ── */
+  .search-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .search-input-wrap {
+    flex: 1;
+    position: relative;
+  }
+  .search-input-wrap svg {
+    position: absolute;
+    left: 10px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .search-input-wrap input {
+    padding-left: 36px;
+  }
+
+  /* ── ITEM DETAIL ── */
+  .item-detail-photo {
+    width: 100%;
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    object-fit: contain;
+    max-height: 300px;
+    background: #000;
+    display: block;
+  }
+
+  /* ── SEARCH SCORE BAR ── */
+  .score-bar {
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+  .score-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  /* ── WLED ── */
+  .wled-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    color: var(--accent2);
+    border: 1px solid var(--accent-line);
+    letter-spacing: 0.03em;
+  }
+  .wled-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent2);
+    animation: pulse-dot 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.4; transform: scale(0.7); }
+  }
+  .find-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    border-radius: 8px;
+    border: 1px solid rgba(253,230,138,0.35);
+    background: var(--lit-soft);
+    color: var(--lit);
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .find-btn:active { background: rgba(253,230,138,0.22); }
+  .find-btn.firing {
+    background: rgba(253,230,138,0.22);
+    animation: find-pulse .6s ease-in-out infinite alternate;
+  }
+  @keyframes find-pulse {
+    from { box-shadow: 0 0 0 0 rgba(253,230,138,.45); }
+    to   { box-shadow: 0 0 0 8px rgba(253,230,138,0); }
+  }
+  .led-strip {
+    display: flex;
+    gap: 3px;
+    flex-wrap: wrap;
+    padding: 10px;
+    background: #0a0a0f;
+    border-radius: 8px;
+    margin: 8px 0;
+    min-height: 36px;
+    align-items: center;
+  }
+  .led-pip {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #222;
+    border: 1px solid #333;
+    flex-shrink: 0;
+    transition: background .2s, box-shadow .2s;
+  }
+  .led-pip.active {
+    border-color: transparent;
+  }
+  .jog-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 6px 0;
+  }
+  .jog-btn {
+    background: var(--border);
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: var(--text);
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .jog-btn:active { opacity: .7; }
+  .jog-label {
+    font-size: 0.78rem;
+    color: var(--muted);
+    min-width: 80px;
+  }
+  .wled-section {
+    margin-bottom: 14px;
+  }
+  .wled-section-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+  .effect-row {
+    display: flex;
+    gap: 8px;
+  }
+  .effect-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all .15s;
+  }
+  .effect-btn.active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent2);
+  }
+  .brightness-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brightness-row input[type=range] {
+    flex: 1;
+    accent-color: var(--accent);
+  }
+
+  /* ── CODE SCANNER OVERLAY (static/js/scanner.js) ──
+     Full-screen camera, everything outside the frame dimmed, corner marks
+     and a sweeping line inside it. Turns green when a code is read. */
+  .scanner {
+    position: fixed; inset: 0; z-index: 900; background: #000;
+    display: none; flex-direction: column; justify-content: space-between;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+             env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  }
+  .scanner.open { display: flex; }
+  .scanner video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .scanner-top, .scanner-bottom { position: relative; z-index: 2; padding: 16px; color: #fff; }
+  .scanner-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .scanner-title { font-weight: 700; font-size: 1.05rem; }
+  .scanner-hint { font-size: 0.8rem; opacity: 0.85; margin-top: 2px; }
+  .scanner-close {
+    width: 40px; height: 40px; border-radius: 50%; border: none; flex-shrink: 0;
+    background: rgba(0,0,0,0.55); color: #fff; font-size: 1rem; cursor: pointer;
+  }
+  .scanner-frame {
+    position: absolute; z-index: 1; left: 50%; top: 46%;
+    width: min(78vw, 420px); aspect-ratio: 1.45; transform: translate(-50%, -50%);
+    border-radius: 14px;
+    box-shadow: 0 0 0 200vmax rgba(0,0,0,0.55);      /* dims everything outside */
+  }
+  .scanner-frame .c { position: absolute; width: 30px; height: 30px; border: 4px solid var(--accent2); }
+  .scanner-frame .tl { top: -2px; left: -2px; border-right: none; border-bottom: none; border-top-left-radius: 14px; }
+  .scanner-frame .tr { top: -2px; right: -2px; border-left: none; border-bottom: none; border-top-right-radius: 14px; }
+  .scanner-frame .bl { bottom: -2px; left: -2px; border-right: none; border-top: none; border-bottom-left-radius: 14px; }
+  .scanner-frame .br { bottom: -2px; right: -2px; border-left: none; border-top: none; border-bottom-right-radius: 14px; }
+  .scanner-line {
+    position: absolute; left: 8%; right: 8%; height: 2px; top: 10%;
+    background: var(--accent2); box-shadow: 0 0 10px var(--accent2);
+    animation: scanner-sweep 1.8s ease-in-out infinite alternate;
+  }
+  @keyframes scanner-sweep { to { top: 88%; } }
+  @media (prefers-reduced-motion: reduce) { .scanner-line { animation: none; top: 50%; } }
+  .scanner.found .c { border-color: var(--success); }
+  .scanner.found .scanner-line { background: var(--success); box-shadow: 0 0 12px var(--success); animation: none; top: 50%; }
+  .scanner-status { text-align: center; font-size: 0.85rem; min-height: 1.3em; margin-bottom: 10px; text-shadow: 0 1px 3px #000; }
+  .scanner-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .scanner-actions .btn { cursor: pointer; }

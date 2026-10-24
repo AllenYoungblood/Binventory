@@ -1,0 +1,4 @@
+# Optional: the AI Assistant (MCP server) plugin in plugins/mcp_server.
+# Without these the plugin shows "Missing dependency" and everything else works.
+mcp>=2.3,<3
+uvicorn>=0.30

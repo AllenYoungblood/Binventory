@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Tests (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Install dependencies (CPU-only torch)
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt -r requirements-mcp.txt
+
+      - name: Frontend static scan
+        run: python tests/scan_frontend.py
+
+      - name: API regression (fresh, seeded database)
+        env:
+          BINVENTORY_TEST_FRESH: "1"
+        run: python tests/api_regression.py
+
+      - name: MCP server contract (in-memory + Streamable HTTP)
+        run: python tests/mcp_contract.py
+
+  docker:
+    name: Docker build + boot
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: binventory:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Boot and wait for healthy
+        run: |
+          docker run -d --name binventory -p 5000:5000 binventory:ci
+          for i in $(seq 1 30); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' binventory)
+            echo "health: $status"
+            [ "$status" = "healthy" ] && break
+            sleep 5
+          done
+          [ "$status" = "healthy" ]
+          curl -fsk https://localhost:5000/api/status
+          curl -fsk https://localhost:5000/ -o /dev/null
+
+      - name: Container logs
+        if: always()
+        run: docker logs binventory || true
