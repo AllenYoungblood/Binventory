@@ -41,9 +41,18 @@ def decode(image, apriltags=True):
     except cv2.error:
         pass
     try:
-        ok, texts, _, _ = cv2.QRCodeDetector().detectAndDecodeMulti(gray)
-        if ok:
-            found += [(t, "qr") for t in texts if t]
+        qr = cv2.QRCodeDetector()
+        ok, texts, _, _ = qr.detectAndDecodeMulti(gray)
+        texts = [t for t in texts if t] if ok else []
+        # The multi-code reader misses about 1 in 5 small (1×1 in) labels.
+        # The single-code reader gets most of those, and OpenCV's ArUco-based
+        # QR detector the rest.
+        if not texts:
+            texts = [t for t in [qr.detectAndDecode(gray)[0]] if t]
+        if not texts and hasattr(cv2, "QRCodeDetectorAruco"):
+            ok, texts, _, _ = cv2.QRCodeDetectorAruco().detectAndDecodeMulti(gray)
+            texts = [t for t in texts if t] if ok else []
+        found += [(t, "qr") for t in texts]
     except cv2.error:
         pass
     if apriltags:
